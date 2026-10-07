@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="80" height="80" role="img" aria-label="Oma Midas Global Limited logo">
+  <title>Oma Midas</title>
+
+  <!-- Background circle -->
+  <circle cx="40" cy="40" r="38" fill="#4A1D4F" />
+
+  <!-- Crown above the monogram -->
+  <!-- Five-point crown sitting above center, drawn in gold -->
+  <path
+    d="M24 36 L28 26 L32 32 L40 22 L48 32 L52 26 L56 36 Z"
+    fill="#C9A86A"
+  />
+
+  <!-- OM monogram — centered in the lower portion of the circle -->
+  <text
+    x="40"
+    y="60"
+    text-anchor="middle"
+    dominant-baseline="auto"
+    font-family="'Playfair Display', Georgia, serif"
+    font-size="22"
+    font-weight="700"
+    fill="#C9A86A"
+    letter-spacing="2"
+  >OM</text>
+</svg>

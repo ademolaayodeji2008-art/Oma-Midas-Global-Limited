@@ -1,0 +1,262 @@
+// =============================================================================
+// Oma Midas Global Limited — Prisma Schema
+// =============================================================================
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// =============================================================================
+// Enums
+// =============================================================================
+
+enum Role {
+  MEMBER
+  ADMIN
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  REJECTED
+  INACTIVE
+}
+
+enum MemberType {
+  NEW
+  EXISTING
+}
+
+enum ContributionStatus {
+  PENDING
+  PAID
+}
+
+enum LoanStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  DISBURSED
+  REPAYING
+  COMPLETED
+}
+
+enum InstallmentStatus {
+  PENDING
+  PAID
+  OVERDUE
+}
+
+enum RefundStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  TRANSFERRED
+  FAILED
+}
+
+enum LedgerType {
+  CONTRIBUTION
+  LOAN_DISBURSEMENT
+  LOAN_REPAYMENT
+  LOAN_FEE
+  REFUND
+  FUND_TOPUP
+}
+
+enum LedgerBook {
+  SAVINGS
+  COMPANY_FUND
+}
+
+// =============================================================================
+// Models
+// =============================================================================
+
+model User {
+  id                   String     @id @default(cuid())
+  fullName             String
+  email                String     @unique
+  phone                String
+  passwordHash         String
+  role                 Role       @default(MEMBER)
+  status               UserStatus @default(PENDING)
+  memberType           MemberType @default(NEW)
+  bankName             String
+  accountNumber        String
+  accountName          String
+  paystackRecipientCode String?
+  passwordResetToken   String?
+  passwordResetExpires DateTime?
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+  deletedAt            DateTime?
+
+  contributions  Contribution[]
+  loans          Loan[]
+  refunds        Refund[]
+  ledgerEntries  LedgerEntry[]
+  notifications  Notification[]
+  auditLogs      AuditLog[]
+
+  @@index([email])
+  @@index([status])
+  @@index([role])
+}
+
+model Cycle {
+  id            String   @id @default(cuid())
+  startDate     DateTime
+  endDate       DateTime
+  isActive      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  contributions Contribution[]
+  loans         Loan[]
+  refunds       Refund[]
+
+  @@index([isActive])
+}
+
+model Contribution {
+  id           String             @id @default(cuid())
+  userId       String
+  cycleId      String
+  month        Int
+  year         Int
+  amountKobo   Int
+  status       ContributionStatus @default(PENDING)
+  paystackRef  String?            @unique
+  paidAt       DateTime?
+  createdAt    DateTime           @default(now())
+
+  user  User  @relation(fields: [userId], references: [id])
+  cycle Cycle @relation(fields: [cycleId], references: [id])
+
+  @@unique([userId, cycleId, month, year])
+  @@index([userId])
+  @@index([cycleId])
+  @@index([paystackRef])
+}
+
+model Loan {
+  id                    String     @id @default(cuid())
+  userId                String
+  cycleId               String
+  requestedAmountKobo   Int
+  feeKobo               Int
+  disbursedAmountKobo   Int
+  totalRepayableKobo    Int
+  status                LoanStatus @default(PENDING)
+  rejectionReason       String?
+  paystackTransferCode  String?
+  repaymentMonths       Int
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+
+  user         User             @relation(fields: [userId], references: [id])
+  cycle        Cycle            @relation(fields: [cycleId], references: [id])
+  installments LoanInstallment[]
+  ledgerEntries LedgerEntry[]
+
+  @@index([userId])
+  @@index([cycleId])
+  @@index([status])
+}
+
+model LoanInstallment {
+  id          String            @id @default(cuid())
+  loanId      String
+  dueDate     DateTime
+  amountKobo  Int
+  status      InstallmentStatus @default(PENDING)
+  paystackRef String?           @unique
+  paidAt      DateTime?
+  createdAt   DateTime          @default(now())
+
+  loan Loan @relation(fields: [loanId], references: [id])
+
+  @@index([loanId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+model Refund {
+  id                   String       @id @default(cuid())
+  userId               String
+  cycleId              String
+  amountKobo           Int
+  status               RefundStatus @default(PENDING)
+  rejectionReason      String?
+  paystackTransferCode String?
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id])
+  cycle Cycle @relation(fields: [cycleId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+}
+
+model LedgerEntry {
+  id              String     @id @default(cuid())
+  type            LedgerType
+  ledger          LedgerBook
+  userId          String?
+  loanId          String?
+  amountKobo      Int
+  balanceAfterKobo Int
+  reference       String     @unique
+  createdAt       DateTime   @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+  loan Loan? @relation(fields: [loanId], references: [id])
+
+  @@index([ledger])
+  @@index([userId])
+  @@index([reference])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([isRead])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  adminId    String
+  action     String
+  targetType String
+  targetId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  admin User @relation(fields: [adminId], references: [id])
+
+  @@index([adminId])
+  @@index([createdAt])
+}
+
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}

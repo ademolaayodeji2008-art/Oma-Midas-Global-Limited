@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="Oma Midas favicon">
+  <title>Oma Midas</title>
+
+  <!-- Background circle -->
+  <circle cx="16" cy="16" r="15" fill="#4A1D4F" />
+
+  <!-- Mini crown -->
+  <path
+    d="M9 14 L11 10 L13 12.5 L16 8 L19 12.5 L21 10 L23 14 Z"
+    fill="#C9A86A"
+  />
+
+  <!-- OM monogram -->
+  <text
+    x="16"
+    y="25"
+    text-anchor="middle"
+    dominant-baseline="auto"
+    font-family="'Playfair Display', Georgia, serif"
+    font-size="9"
+    font-weight="700"
+    fill="#C9A86A"
+    letter-spacing="1"
+  >OM</text>
+</svg>

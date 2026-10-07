@@ -1,0 +1,127 @@
+/* =============================================================================
+   Oma Midas Global Limited — Design System Stylesheet
+   ============================================================================= */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =============================================================================
+   CSS Custom Properties — Design Tokens
+   ============================================================================= */
+
+:root {
+  /* Brand colours */
+  --color-primary:    #4A1D4F;
+  --color-accent:     #C9A86A;
+  --color-blush:      #F4E1E6;
+  --color-background: #FAF7F5;
+  --color-charcoal:   #2B2B2B;
+  --color-success:    #2E7D5B;
+  --color-warning:    #D9962B;
+  --color-error:      #B3392F;
+
+  /* Semantic aliases */
+  --bg:   var(--color-background);
+  --text: var(--color-charcoal);
+
+  /* Typography scale */
+  --font-heading: "Playfair Display", serif;
+  --font-body:    "Inter", sans-serif;
+
+  /* Spacing */
+  --radius-xl:  12px;
+  --radius-2xl: 16px;
+
+  /* Shadows */
+  --shadow-card:  0 2px 16px rgba(74, 29, 79, 0.08);
+  --shadow-hover: 0 4px 24px rgba(74, 29, 79, 0.16);
+}
+
+/* =============================================================================
+   Base Styles
+   ============================================================================= */
+
+@layer base {
+  body {
+    font-family: var(--font-body);
+    background-color: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-heading);
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  img,
+  svg {
+    display: block;
+    max-width: 100%;
+  }
+}
+
+/* =============================================================================
+   Component Utilities
+   ============================================================================= */
+
+@layer components {
+  /* Thin gold horizontal rule */
+  .gold-divider {
+    border: none;
+    border-top: 1px solid rgba(201, 168, 106, 0.4);
+    margin-block: 1rem;
+  }
+
+  /* Standard card container */
+  .card-base {
+    @apply bg-white rounded-2xl shadow-card p-6;
+  }
+
+  /* Primary action button */
+  .btn-primary {
+    @apply bg-primary text-white px-6 py-3 rounded-xl font-semibold
+           hover:shadow-hover transition-all duration-200 cursor-pointer
+           focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2;
+  }
+
+  /* Secondary / outline button */
+  .btn-secondary {
+    @apply border border-primary text-primary px-6 py-3 rounded-xl font-semibold
+           hover:bg-blush transition-all duration-200 cursor-pointer
+           focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2;
+  }
+
+  /* Accent text utility */
+  .text-gold {
+    color: var(--color-accent);
+  }
+}
+
+/* =============================================================================
+   Accessibility — Reduced Motion
+   Respects the user's OS-level preference for reduced motion.
+   ============================================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
