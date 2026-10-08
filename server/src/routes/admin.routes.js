@@ -25,6 +25,7 @@ import {
   getAllTransactions,
   getAuditLogs,
   getSettings,
+  getSetting,
   updateSetting,
   startNewCycle,
 } from '../controllers/admin.controller.js';
@@ -67,6 +68,7 @@ router.get('/audit-logs', getAuditLogs);
 
 // Settings
 router.get('/settings', getSettings);
+router.get('/settings/:key', getSetting);
 router.put('/settings/:key', updateSetting);
 
 // Cycles

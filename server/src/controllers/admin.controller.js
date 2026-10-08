@@ -708,6 +708,20 @@ export async function getSettings(req, res, next) {
 }
 
 // ---------------------------------------------------------------------------
+// getSetting (single key)
+// ---------------------------------------------------------------------------
+export async function getSetting(req, res, next) {
+  try {
+    const { key } = req.params;
+    const setting = await prisma.setting.findUnique({ where: { key } });
+    if (!setting) return res.status(404).json({ error: 'Setting not found' });
+    return res.json({ key: setting.key, value: setting.value, setting });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // updateSetting
 // ---------------------------------------------------------------------------
 export async function updateSetting(req, res, next) {

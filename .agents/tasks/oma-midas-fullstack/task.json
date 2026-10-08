@@ -1,0 +1,12 @@
+{
+  "task_id": "task-oma-midas-fullstack",
+  "task_description": "Build a complete full-stack web application for Oma Midas Global Limited, a members' savings and loan cooperative. Includes React+Vite frontend, Node.js+Express backend, Prisma+Supabase Postgres DB, Paystack payments, JWT auth, admin and member portals, cron jobs, and deployment configs.",
+  "status": "pending",
+  "feature_order": [
+    "FEAT-001",
+    "FEAT-002",
+    "FEAT-003",
+    "FEAT-004"
+  ],
+  "blocked_reason": null
+}

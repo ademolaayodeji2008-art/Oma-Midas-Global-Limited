@@ -1,0 +1,130 @@
+{
+  "id": "FEAT-003",
+  "type": "feat",
+  "description": "Complete React+Vite frontend: all pages (public, member, admin), all components (layout, UI, forms), AuthContext, hooks, API client, Paystack integration, Framer Motion animations, and the full design system. Depends on FEAT-001 (Tailwind config, project setup) and assumes FEAT-002 backend is available.",
+  "status": "pending",
+  "steps": [
+    "Step 1 — Create client/src/lib/api.js: import axios. Create instance with baseURL=import.meta.env.VITE_API_URL, withCredentials:true, headers:{'Content-Type':'application/json'}. Add response interceptor: on 401 redirect to /login (except if already on /login). Export the instance as default. Export named helper functions: get(url, params), post(url, data), put(url, data), del(url) — thin wrappers around the axios instance.",
+
+    "Step 2 — Create client/src/lib/paystack.js: export function loadPaystack() returns a Promise that dynamically loads the Paystack inline script (https://js.paystack.co/v1/inline.js) if not already loaded. Export function openPaystackCheckout({key, email, amountKobo, reference, onSuccess, onClose}) — creates PaystackPop.setup({key, email, amount:amountKobo, ref:reference, callback:onSuccess, onClose}) and calls .openIframe().",
+
+    "Step 3 — Create client/src/context/AuthContext.jsx: create AuthContext with createContext. AuthProvider component: state {user, loading}. On mount call GET /api/auth/me to hydrate user. Expose {user, loading, login(credentials), logout(), isAdmin, isMember, isAuthenticated}. login() calls POST /api/auth/login and sets user from response. logout() calls POST /api/auth/logout and clears user. Export useAuth hook from this file.",
+
+    "Step 4 — Create client/src/hooks/useAuth.js: re-export useAuth from AuthContext for convenience (or just document that it comes from AuthContext — keep as a single line re-export).",
+
+    "Step 5 — Create client/src/hooks/useNotifications.js: state {notifications, unreadCount, loading}. Fetches GET /api/notifications on mount. Polls unread count every 60s. Exposes markRead(ids), refetch().",
+
+    "Step 6 — Create client/src/hooks/useCycle.js: fetches current active cycle from GET /api/admin/settings (or a dedicated /api/cycle endpoint — add GET /api/cycle to backend that returns active cycle publicly). State {cycle, loading}.",
+
+    "Step 7 — Create client/src/components/ui/Button.jsx: variants (primary, secondary, outline, ghost, danger). sizes (sm, md, lg). Props: variant, size, loading (shows spinner), disabled, onClick, type, children, className. Uses motion.button from framer-motion with whileHover={{y:-2, boxShadow}} and whileTap={{scale:0.97}}. Applies correct Tailwind classes per variant. Fully accessible (aria attributes).",
+
+    "Step 8 — Create client/src/components/ui/Card.jsx: wrapper div with card-base class + optional hover effect. Props: children, className, hover (bool), onClick. If hover=true and onClick, add cursor-pointer and motion hover animation.",
+
+    "Step 9 — Create client/src/components/ui/Badge.jsx: small pill badge. variants: success (green bg), warning (amber), error (red), info (plum), neutral (gray). Props: variant, children.",
+
+    "Step 10 — Create client/src/components/ui/Modal.jsx: overlay + centered panel. Props: isOpen, onClose, title, children, size (sm/md/lg). Use AnimatePresence + motion.div for fade+scale entrance. Trap focus inside. Close on Escape key and overlay click. Accessible: role=dialog, aria-modal, aria-labelledby.",
+
+    "Step 11 — Create client/src/components/ui/Table.jsx: responsive table wrapper. Props: columns (array of {key, label, render?}), data, loading, emptyMessage. Shows skeleton rows when loading. Zebra striping, hover row highlight.",
+
+    "Step 12 — Create client/src/components/ui/Pagination.jsx: props: page, totalPages, onPageChange. Shows prev/next buttons + page numbers (ellipsis for large ranges). Disabled states for first/last page.",
+
+    "Step 13 — Create client/src/components/ui/Toast.jsx: toast notification system. ToastProvider context + useToast hook. Shows stacked toasts top-right. Each toast: message, type (success/error/info/warning), auto-dismiss after 4s. Framer Motion slide-in from right animation.",
+
+    "Step 14 — Create client/src/components/ui/NotificationBell.jsx: bell icon button showing unread count badge. onClick opens dropdown panel listing recent notifications. Mark all as read button. Uses useNotifications hook.",
+
+    "Step 15 — Create client/src/components/ui/AnimatedCounter.jsx: animates a number from 0 to target value over 1.2s on mount (using framer-motion useMotionValue + useSpring or a counting interval). Props: value, prefix (e.g. '₦'), suffix, formatter. Used on dashboards.",
+
+    "Step 16 — Create client/src/components/ui/ProgressBar.jsx: horizontal bar that animates width from 0% to value% on mount (framer-motion initial={width:0} animate={width:percent%} transition={duration:0.8}). Props: value (0-100), color, label, showLabel. Used for savings progress.",
+
+    "Step 17 — Create client/src/components/layout/Navbar.jsx: sticky top nav. Left: logo + 'Oma Midas'. Right: notification bell (if authenticated), user name + avatar initials, logout button. On scroll adds shadow (useScroll + motion). Mobile: hamburger button. Hides on member/admin dashboard pages (those use Sidebar). Show on public pages only.",
+
+    "Step 18 — Create client/src/components/layout/Sidebar.jsx: left sidebar for authenticated pages (member and admin). Desktop: fixed 240px wide. Mobile: hidden, shown via MobileMenu. Links: member area links or admin area links based on role. Active link highlighted. Logo at top. Collapse toggle on desktop. Uses framer-motion for slide-in.",
+
+    "Step 19 — Create client/src/components/layout/MobileMenu.jsx: bottom tab bar on mobile for authenticated pages. 5 main nav items per role as icon+label tabs. Shows active state. Hides on desktop (hidden md:flex).",
+
+    "Step 20 — Create client/src/components/layout/Footer.jsx: simple footer for public pages. Logo, tagline, contact email, copyright. Gold divider at top.",
+
+    "Step 21 — Create client/src/components/forms/TermsModal.jsx: modal containing full T&C text fetched from GET /api/admin/settings/terms. Scrollable content area. 'I have read and agree' checkbox only becomes enabled when user scrolls to the bottom (onScroll handler checks scrollTop + clientHeight >= scrollHeight - 10). Confirm button disabled until checkbox ticked.",
+
+    "Step 22 — Create client/src/components/forms/BankAccountVerifier.jsx: form component with bankName (searchable select from /api/paystack/banks), accountNumber input. On blur of accountNumber: calls GET /api/paystack/resolve-account?accountNumber=&bankCode= and shows account name if found, error if not. Props: onVerified(bankName, accountNumber, accountName, bankCode). Shows loading state during verification.",
+
+    "Step 23 — Create client/src/components/forms/LoanCalculator.jsx: interactive calculator. Inputs: loan amount (naira, converts to kobo). Displays in real time: Amount requested, Company fee (30%), Amount you receive (70%), Total to repay. Used on landing page (standalone, no API) and on loan request page. Props: feePercentage (default 30).",
+
+    "Step 24 — Create client/src/components/forms/RepaymentPlanBuilder.jsx: dynamic form. Props: totalRepayableKobo, cycleEndDate, onChange(schedule). User selects number of months (1-12). Renders that many rows, each with a date picker and amount input. Shows running total. Validates: sum of amounts === totalRepayableKobo, all dates <= cycleEndDate, no duplicate dates. Shows validation errors inline.",
+
+    "Step 25 — Create client/src/pages/public/Landing.jsx: Full landing page with ALL sections:\n  (a) Hero: framer-motion staggered entrance (headline, sub, CTA buttons 'Join Now' → /signup, 'Learn More' → scrolls to how-it-works). Background: gradient from primary to primary-dark. Headline: 'Your Trusted Savings & Loan Cooperative'. \n  (b) How It Works: 4 steps with icons — Sign Up, Save Monthly, Apply for Loan, Receive Funds. Fade-up on scroll (useInView).\n  (c) Benefits: 3 benefit cards with icons — Secure Savings, Flexible Loans, Transparent Process.\n  (d) Loan Calculator section: embeds LoanCalculator component. Title 'See Your Loan Breakdown'.\n  (e) FAQ accordion: 6 questions about the cooperative (cycles, eligibility, loan amounts, repayment, fees, refunds). Click to expand with framer-motion height animation.\n  (f) CTA banner: 'Ready to start saving?' with Join Now button.\n  (g) Footer component.",
+
+    "Step 26 — Create client/src/pages/public/Login.jsx: form with email + password. Calls api.post('/auth/login'). Handles 403 with status=PENDING → redirects to /pending, REJECTED → redirects to /rejected?reason=.... On success: redirects to /member/dashboard (MEMBER) or /admin/dashboard (ADMIN). Link to /forgot-password.",
+
+    "Step 27 — Create client/src/pages/public/Signup.jsx: multi-step or single form: fullName, email, phone, password + confirm, BankAccountVerifier component. Bottom: 'I agree to Terms & Conditions' checkbox that opens TermsModal on click. Submit only enabled when T&C agreed. Calls POST /api/auth/register. On success → redirects to /pending.",
+
+    "Step 28 — Create client/src/pages/public/ForgotPassword.jsx: email input form. Calls POST /api/auth/forgot-password. Shows 'If an account exists, you will receive an email' regardless.",
+
+    "Step 29 — Create client/src/pages/public/ResetPassword.jsx: reads token from ?token= query param. Form: new password + confirm. Calls POST /api/auth/reset-password. On success → /login with success toast.",
+
+    "Step 30 — Create client/src/pages/public/PendingApproval.jsx: static page showing 'Your application is under review' message, cooperative contact info, logout button.",
+
+    "Step 31 — Create client/src/pages/public/Rejected.jsx: reads reason from query params. Shows rejection message with reason. Logout button. Contact info.",
+
+    "Step 32 — Create client/src/pages/member/Dashboard.jsx: layout with Sidebar. Animated stats cards (AnimatedCounter): Savings Balance (₦), Loan Balance (amount owed / repaid / remaining), Current Cycle dates, This Month's Status badge. Savings progress bar showing which months paid (12-month grid with colored dots per month — green=paid, gray=pending, red=missed). Notification bell. Framer Motion staggered card entrance on load.",
+
+    "Step 33 — Create client/src/pages/member/Contributions.jsx: list of this cycle's contributions (month-by-month). Each row: month, status badge, amount, paidAt. 'Pay Now' button for current month if unpaid — calls POST /api/contributions/initialize-payment then opens Paystack checkout via openPaystackCheckout(). After Paystack callback, shows 'Payment processing' message (webhook will confirm). Streak display at top.",
+
+    "Step 34 — Create client/src/pages/member/LoanRequest.jsx: eligibility check banner (calls GET /api/loans/eligibility). If not eligible, show reasons. If eligible: form with LoanCalculator embedded, RepaymentPlanBuilder component, submit button. Shows loan breakdown before submit. Calls POST /api/loans. On success shows confirmation.",
+
+    "Step 35 — Create client/src/pages/member/LoanRepayment.jsx: current loan card showing status, amount, disbursed, total repayable, remaining. Installment schedule table: dueDate, amount, status badge, Pay button. Overdue rows highlighted in error red. Pay button calls POST /api/loans/repayment/initialize then Paystack checkout.",
+
+    "Step 36 — Create client/src/pages/member/Refund.jsx: shows current savings balance. If outstanding loan → warning message, button disabled. Else: refund request form (amount auto-filled with savings balance, read-only). Confirm button calls POST /api/refunds. Shows existing refund requests and statuses.",
+
+    "Step 37 — Create client/src/pages/member/Transactions.jsx: transactions table from GET /api/admin/transactions (member version: filter by userId). Filters: date range, type, status. Pagination. 'Export CSV' button that calls API with ?format=csv and triggers download.",
+
+    "Step 38 — Create client/src/pages/member/Profile.jsx: shows current user info. Editable fields: phone, bankName, accountNumber (with BankAccountVerifier). Change password form (current + new + confirm). Calls PUT /api/auth/profile and PUT /api/auth/change-password. Toast on success.",
+
+    "Step 39 — Create client/src/pages/member/Notifications.jsx: full notifications list, paginated. Unread highlighted. 'Mark all as read' button. Each notification shows title, message, time ago, type icon.",
+
+    "Step 40 — Create client/src/pages/admin/Dashboard.jsx: admin layout with Sidebar showing admin links. Stats cards with AnimatedCounter: Total Members, Pending Approvals (with badge), Total Savings, Company Fund Balance, Total Loans Out, Repayments Received, Paystack Balance. Two charts using a lightweight approach (plain SVG bar charts or css-based — no chart library to keep deps minimal): Monthly Contributions bar chart, Active Loans by status donut. Framer Motion animated entrance.",
+
+    "Step 41 — Create client/src/pages/admin/Members.jsx: two tabs: 'Pending Approvals' and 'All Members'. Pending: table with name, email, phone, bank details, signup date, Approve button (opens modal to select NEW or EXISTING type) and Reject button (opens modal with reason textarea). All Members: searchable, filterable by status, paginated table. Each row has view details, deactivate actions.",
+
+    "Step 42 — Create client/src/pages/admin/Loans.jsx: loan requests table filtered by status. Columns: member name, savings in cycle, streak, requested amount, fee, net payout, repayment months, status. Approve button: checks fund, confirms, calls PUT /api/admin/loans/:id/approve. Reject button: opens reason modal. Shows loan installment schedule in expandable row.",
+
+    "Step 43 — Create client/src/pages/admin/Refunds.jsx: refund requests table. Columns: member name, savings balance, requested amount, status, created date. Approve / Reject with reason. Shows outstanding loan warning if applicable.",
+
+    "Step 44 — Create client/src/pages/admin/CompanyFund.jsx: fund balance card (AnimatedCounter). Paystack balance card. Record Top-up button (modal with amount + reference + note). Ledger entries table for COMPANY_FUND filtered entries.",
+
+    "Step 45 — Create client/src/pages/admin/Reports.jsx: full transaction ledger table with date, type, ledger, member, amount, balance after, reference. Filters: date range, type, ledger. Pagination. Export CSV button.",
+
+    "Step 46 — Create client/src/pages/admin/AuditLog.jsx: audit log table. Columns: admin name, action, target type, target id, metadata (expandable), timestamp. Filter by admin, action type. Paginated.",
+
+    "Step 47 — Create client/src/pages/admin/Settings.jsx: two sections. (a) System settings: fee_percentage, loan_multiplier, min_consecutive_months as editable number inputs with save button per field. (b) Terms & Conditions: rich text area (plain textarea with HTML accepted) showing current T&C, save button. Calls PUT /api/admin/settings/:key for each. Start New Cycle button with confirmation modal.",
+
+    "Step 48 — Create client/src/App.jsx: set up React Router v6. Public routes: /, /login, /signup, /forgot-password, /reset-password, /pending, /rejected. Protected member routes under /member/* (require ACTIVE status). Protected admin routes under /admin/* (require ADMIN role). Create ProtectedRoute component: checks isAuthenticated, if loading shows spinner, if not authenticated redirect to /login, if wrong role redirect appropriately. Wrap app in AuthProvider, ToastProvider.",
+
+    "Step 49 — Create client/src/main.jsx: import React, ReactDOM, App, './styles/index.css'. ReactDOM.createRoot(document.getElementById('root')).render(<React.StrictMode><App/></React.StrictMode>).",
+
+    "Step 50 — Add the following backend endpoint that was needed by the frontend but not listed in FEAT-002:\n  (a) GET /api/cycle → public, returns active cycle {id, startDate, endDate, isActive}. Add to a new file server/src/routes/cycle.routes.js and mount in server.js at /api/cycle.\n  (b) PUT /api/auth/profile → authenticated, update phone/bankName/accountNumber/accountName. Re-verify bank account before update.\n  (c) PUT /api/auth/change-password → authenticated, verify current password with bcrypt, hash new, update.\n  (d) GET /api/contributions/monthly-amount → returns the monthly contribution amount from settings (key: monthly_contribution_kobo, default 500000). Add this setting to seed.js.\n  (e) GET /api/admin/settings/:key → returns single setting value — add this route to admin routes.",
+
+    "Step 51 — Add Framer Motion page transition wrapper. Create client/src/components/layout/PageTransition.jsx: wraps children in motion.div with initial={opacity:0, y:16}, animate={opacity:1, y:0}, exit={opacity:0, y:-8}, transition={duration:0.3, ease:'easeOut'}. Wrap each page render in App.jsx inside <AnimatePresence mode='wait'>.",
+
+    "Step 52 — Add all missing Framer Motion animations across pages:\n  - Landing page: staggered hero entrance (staggerChildren:0.12), fade-up sections on scroll (useInView with once:true, margin:'-80px').\n  - Dashboard cards: staggered entrance with delay per card index.\n  - Sidebar: slide in from left (x:-240 to x:0) on mobile open.\n  - Table rows: staggered fade-in.\n  - Buttons: whileHover={y:-2} whileTap={scale:0.97}.\n  - Notification bell: wiggle animation on new notification (keyframes rotate).\n  - Progress bars: width animation on mount.\n  - Animated counters on all dashboard stat cards.\n  All wrapped in: if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return children without animation."
+  ],
+  "acceptance_criteria": [
+    "`npm run build` from client/ exits 0 with no TypeScript/JSX compile errors",
+    "Landing page renders with all 6 sections visible",
+    "Signup page has working T&C modal with scroll-to-bottom requirement",
+    "BankAccountVerifier calls /api/paystack/resolve-account and shows account name",
+    "Member Dashboard shows savings balance, loan info, and 12-month contribution grid",
+    "Admin Dashboard shows all stat cards and navigation to all admin pages",
+    "All Framer Motion animations respect prefers-reduced-motion",
+    "React Router navigation works for all public, member, and admin routes",
+    "AuthContext correctly redirects unauthenticated users to /login"
+  ],
+  "verification": [
+    "From client/: `npm install` — exits 0",
+    "From client/: `npm run build` — exits 0, dist/ folder created with index.html and assets",
+    "From client/: `npm run dev` — starts Vite dev server on port 5173 without errors",
+    "Navigate to http://localhost:5173 — landing page loads with all sections"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

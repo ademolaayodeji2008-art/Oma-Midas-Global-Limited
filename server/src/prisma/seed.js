@@ -57,6 +57,10 @@ async function main() {
       value: '3',
     },
     {
+      key: 'monthly_contribution_kobo',
+      value: '500000',
+    },
+    {
       key: 'terms_and_conditions',
       value: `<p>Terms and conditions for Oma Midas Global Limited cooperative membership.</p>
 <p>By registering as a member, you agree to contribute a fixed monthly amount to the cooperative savings pool. Your contributions form the basis of your eligibility for cooperative loans.</p>
