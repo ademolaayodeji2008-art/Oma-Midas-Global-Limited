@@ -1,0 +1,70 @@
+FEAT-003 Complete
+=================
+Date: 2025
+
+All 52 steps implemented and verified.
+
+CLIENT FILES CREATED (client/src/):
+- lib/api.js — axios instance, baseURL=VITE_API_URL, withCredentials, 401 interceptor, named helpers
+- lib/paystack.js — loadPaystack() dynamic script loader, openPaystackCheckout()
+- context/AuthContext.jsx — AuthProvider with user/loading, login/logout, isAdmin/isMember/isAuthenticated, useAuth hook
+- hooks/useAuth.js — re-export from AuthContext
+- hooks/useNotifications.js — fetch GET /api/notifications, poll every 60s, markRead, refetch
+- hooks/useCycle.js — GET /api/cycle, {cycle, loading}
+- components/ui/Button.jsx — variants, sizes, loading spinner, framer-motion whileHover/whileTap
+- components/ui/Card.jsx — card-base, hover animation
+- components/ui/Badge.jsx — success/warning/error/info/neutral
+- components/ui/Modal.jsx — AnimatePresence fade+scale, focus trap, Escape key, aria-modal
+- components/ui/Table.jsx — columns/data/loading/emptyMessage, skeleton, zebra striping
+- components/ui/Pagination.jsx — prev/next, page numbers, ellipsis
+- components/ui/Toast.jsx — ToastProvider + useToast, stacked top-right, framer-motion, auto-dismiss 4s
+- components/ui/NotificationBell.jsx — bell + unread badge + dropdown
+- components/ui/AnimatedCounter.jsx — count from 0 to target, prefix/suffix/formatter
+- components/ui/ProgressBar.jsx — framer-motion width animation 0→value%
+- components/layout/Navbar.jsx — sticky, public pages only, notification bell, avatar, logout
+- components/layout/Sidebar.jsx — 240px fixed desktop, mobile slide-in, role-based links
+- components/layout/MobileMenu.jsx — bottom tab bar mobile, icon+label, active state
+- components/layout/Footer.jsx — logo, tagline, contact, copyright, gold divider
+- components/layout/PageTransition.jsx — motion.div page wrapper
+- components/forms/TermsModal.jsx — fetch T&C from API, scroll-to-bottom to enable checkbox
+- components/forms/BankAccountVerifier.jsx — bank select, account resolve, account name display
+- components/forms/LoanCalculator.jsx — real-time fee/amount/total breakdown
+- components/forms/RepaymentPlanBuilder.jsx — N month rows, validates sum + dates
+- pages/public/Landing.jsx — 6 sections with full framer-motion animations
+- pages/public/Login.jsx — PENDING/REJECTED handling, role-based redirect
+- pages/public/Signup.jsx — BankAccountVerifier + TermsModal
+- pages/public/ForgotPassword.jsx
+- pages/public/ResetPassword.jsx
+- pages/public/PendingApproval.jsx
+- pages/public/Rejected.jsx
+- pages/member/Dashboard.jsx — AnimatedCounter stats, 12-month grid, staggered cards
+- pages/member/Contributions.jsx — Pay Now via Paystack, streak display
+- pages/member/LoanRequest.jsx — eligibility check, LoanCalculator + RepaymentPlanBuilder
+- pages/member/LoanRepayment.jsx — installment table, overdue highlight, Pay via Paystack
+- pages/member/Refund.jsx — savings balance, outstanding loan warning
+- pages/member/Transactions.jsx — filters, pagination, CSV export
+- pages/member/Profile.jsx — BankAccountVerifier, change password
+- pages/member/Notifications.jsx — paginated, mark all read
+- pages/admin/Dashboard.jsx — AnimatedCounter stats, SVG charts, framer-motion
+- pages/admin/Members.jsx — Pending Approvals + All Members tabs
+- pages/admin/Loans.jsx — approve/reject modals, expandable installments
+- pages/admin/Refunds.jsx — approve/reject with reason
+- pages/admin/CompanyFund.jsx — fund balance, Paystack balance, top-up modal
+- pages/admin/Reports.jsx — full ledger, filters, CSV export
+- pages/admin/AuditLog.jsx — expandable metadata, filter by admin/action
+- pages/admin/Settings.jsx — per-field save, T&C textarea, Start New Cycle
+- App.jsx — React Router v6, ProtectedRoute, AuthProvider + ToastProvider
+- main.jsx — ReactDOM.createRoot with StrictMode
+
+SERVER ADDITIONS:
+- server/src/routes/admin.routes.js — added GET /api/admin/settings/:key route
+- server/src/controllers/admin.controller.js — getSetting handler already present
+- server/src/prisma/seed.js — added monthly_contribution_kobo=500000 to settings seed
+- server/server.js — GET /api/cycle already mounted (getCycleInfo from admin.controller)
+- server/src/routes/auth.routes.js — PUT /api/auth/profile and PUT /api/auth/change-password already present
+- server/src/routes/contributions.routes.js — GET /api/contributions/monthly-amount already present
+
+BUILD VERIFICATION:
+  cd client && npm run build — exits 0, 432 modules, dist/ created successfully
+
+COMMIT: feat: complete FEAT-003 React frontend with all pages, components, and hooks
