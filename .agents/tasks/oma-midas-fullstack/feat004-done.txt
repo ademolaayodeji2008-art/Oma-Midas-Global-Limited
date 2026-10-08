@@ -1,0 +1,18 @@
+FEAT-004 completed successfully.
+
+Files created:
+  server/render.yaml          — Render deployment manifest (web service, starter plan, Oregon)
+  client/vercel.json          — Vercel SPA rewrite + build config
+  server/scripts/backup.js    — pg_dump backup script (ES module, exports runBackup())
+  server/scripts/backup.cron.js — Weekly cron wrapper (Sundays 2am, exports startBackupCronJob())
+  README.md                   — Full project README with all required sections
+
+Files modified:
+  server/package.json         — Added "backup": "node scripts/backup.js" npm script
+
+Verifications passed:
+  - render.yaml: structure checks passed (name, env, plan, healthCheckPath, startCommand)
+  - client/vercel.json: valid JSON, SPA rewrite confirmed
+  - server/scripts/backup.js: exits with code 1 and prints expected message when DATABASE_URL not set
+
+Completed: 2025-01-12
