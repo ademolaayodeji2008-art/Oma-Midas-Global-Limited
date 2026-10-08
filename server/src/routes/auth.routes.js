@@ -26,6 +26,7 @@ const registerSchema = z.object({
   phone: z.string().min(10, 'Phone number must be at least 10 characters'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   bankName: z.string().min(1, 'Bank name is required'),
+  bankCode: z.string().min(1, 'Bank code is required'),
   accountNumber: z.string().min(10, 'Account number must be at least 10 digits'),
   accountName: z.string().min(2, 'Account name must be at least 2 characters'),
 });

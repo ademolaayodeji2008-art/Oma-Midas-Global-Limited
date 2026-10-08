@@ -36,3 +36,5 @@ services:
         sync: false
       - key: SENTRY_DSN
         sync: false
+      - key: ENABLE_BACKUP_CRON
+        value: "false"

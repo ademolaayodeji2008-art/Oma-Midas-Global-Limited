@@ -57,6 +57,7 @@ export default function Signup() {
         phone: form.phone,
         password: form.password,
         bankName: bankData.bankName,
+        bankCode: bankData.bankCode,
         accountNumber: bankData.accountNumber,
         accountName: bankData.accountName,
       });

@@ -145,6 +145,15 @@ async function start() {
   startReminderJob();
   startKeepaliveJob();
 
+  // Optional weekly backup cron (set ENABLE_BACKUP_CRON=true to enable)
+  if (process.env.ENABLE_BACKUP_CRON === 'true') {
+    import('./scripts/backup.cron.js').then(({ startBackupCronJob }) => {
+      startBackupCronJob();
+    }).catch((err) => {
+      logger.error('Failed to start backup cron job', err);
+    });
+  }
+
   app.listen(PORT, () => {
     logger.info(`Server running on port ${PORT}`);
     console.log(`Server running on port ${PORT}`);

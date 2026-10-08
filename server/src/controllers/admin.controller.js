@@ -99,7 +99,7 @@ export async function getPendingMembers(req, res, next) {
         take: limit,
         select: {
           id: true, fullName: true, email: true, phone: true,
-          bankName: true, accountNumber: true, accountName: true,
+          bankName: true, bankCode: true, accountNumber: true, accountName: true,
           createdAt: true,
         },
       }),
@@ -200,7 +200,7 @@ export async function getAllMembers(req, res, next) {
         select: {
           id: true, fullName: true, email: true, phone: true,
           status: true, memberType: true, role: true,
-          bankName: true, accountNumber: true, accountName: true,
+          bankName: true, bankCode: true, accountNumber: true, accountName: true,
           createdAt: true,
         },
       }),
@@ -225,7 +225,7 @@ export async function getMemberDetail(req, res, next) {
       select: {
         id: true, fullName: true, email: true, phone: true,
         status: true, memberType: true, role: true,
-        bankName: true, accountNumber: true, accountName: true,
+        bankName: true, bankCode: true, accountNumber: true, accountName: true,
         paystackRecipientCode: true, createdAt: true, updatedAt: true,
         contributions: { orderBy: [{ year: 'desc' }, { month: 'desc' }] },
         loans: { include: { installments: { orderBy: { dueDate: 'asc' } } }, orderBy: { createdAt: 'desc' } },
@@ -280,7 +280,7 @@ export async function getLoanRequests(req, res, next) {
         where,
         include: {
           user: {
-            select: { id: true, fullName: true, email: true, memberType: true, status: true },
+            select: { id: true, fullName: true, email: true, memberType: true, status: true, bankName: true, bankCode: true, accountNumber: true, accountName: true, paystackRecipientCode: true },
           },
           installments: { orderBy: { dueDate: 'asc' } },
         },
@@ -328,7 +328,7 @@ export async function approveLoan(req, res, next) {
       const recipient = await createTransferRecipient({
         name: loan.user.accountName,
         accountNumber: loan.user.accountNumber,
-        bankCode: loan.user.bankName, // bankCode stored in bankName for now
+        bankCode: loan.user.bankCode,
       }).catch((err) => {
         logger.error('createTransferRecipient failed', err);
         return null;
@@ -444,7 +444,7 @@ export async function getRefundRequests(req, res, next) {
       prisma.refund.findMany({
         where,
         include: {
-          user: { select: { id: true, fullName: true, email: true, accountNumber: true, bankName: true, accountName: true, paystackRecipientCode: true } },
+          user: { select: { id: true, fullName: true, email: true, accountNumber: true, bankName: true, bankCode: true, accountName: true, paystackRecipientCode: true } },
           cycle: true,
         },
         orderBy: { createdAt: 'desc' },
@@ -492,7 +492,7 @@ export async function approveRefund(req, res, next) {
       const recipient = await createTransferRecipient({
         name: refund.user.accountName,
         accountNumber: refund.user.accountNumber,
-        bankCode: refund.user.bankName,
+        bankCode: refund.user.bankCode,
       }).catch(() => null);
 
       if (recipient?.recipient_code) {

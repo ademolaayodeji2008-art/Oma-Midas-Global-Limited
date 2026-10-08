@@ -57,7 +57,7 @@ async function main() {
       value: '3',
     },
     {
-      key: 'monthly_contribution_kobo',
+      key: 'monthly_amount',
       value: '500000',
     },
     {

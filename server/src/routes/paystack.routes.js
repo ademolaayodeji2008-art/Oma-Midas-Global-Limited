@@ -37,8 +37,8 @@ router.post(
   webhook
 );
 
-// Resolve account number (requires auth)
-router.get('/resolve-account', authenticate, resolveAccount);
+// Resolve account number (public — used on Signup page before auth exists)
+router.get('/resolve-account', resolveAccount);
 
 // List banks (public)
 router.get('/banks', listBanks);

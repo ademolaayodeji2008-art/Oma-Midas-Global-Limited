@@ -1,0 +1,63 @@
+Fix log — review iteration 1
+Generated: 2024-12-01
+
+All 4 blocking findings from review.json addressed:
+
+─────────────────────────────────────────────────────
+FINDING 1 (HIGH) — bankCode never persisted
+─────────────────────────────────────────────────────
+Files changed:
+  - server/src/prisma/schema.prisma
+      Added: bankCode String @default("")
+  - server/src/prisma/migrations/20241201000000_add_bank_code/migration.sql
+      Created: ALTER TABLE "User" ADD COLUMN "bankCode" TEXT NOT NULL DEFAULT ''
+  - server/src/prisma/migrations/20241001000000_initial_schema/migration.sql
+      Created: Full initial schema SQL (no migrations existed previously)
+  - server/src/prisma/migrations/migration_lock.toml
+      Created: Prisma migration lock file
+  - client/src/pages/public/Signup.jsx
+      Added bankCode to the POST /api/auth/register payload
+  - server/src/routes/auth.routes.js
+      Added bankCode: z.string().min(1) to registerSchema
+  - server/src/controllers/auth.controller.js
+      register(): destructures bankCode from req.validated and persists it
+      updateProfile(): accepts and persists bankCode; returns it in select
+  - server/src/controllers/admin.controller.js
+      approveLoan(): createTransferRecipient now uses loan.user.bankCode
+      approveRefund(): createTransferRecipient now uses refund.user.bankCode
+      getLoanRequests / getRefundRequests / getPendingMembers /
+        getAllMembers / getMemberDetail: bankCode added to all user selects
+
+─────────────────────────────────────────────────────
+FINDING 2 (HIGH) — resolve-account blocked by auth on Signup page
+─────────────────────────────────────────────────────
+Files changed:
+  - server/src/routes/paystack.routes.js
+      Removed authenticate middleware from GET /resolve-account
+      Updated comment to clarify this is a public endpoint
+
+─────────────────────────────────────────────────────
+FINDING 3 (MEDIUM) — Setting key mismatch monthly_contribution_kobo vs monthly_amount
+─────────────────────────────────────────────────────
+Files changed:
+  - server/src/prisma/seed.js
+      Renamed key 'monthly_contribution_kobo' → 'monthly_amount'
+      (contributions.controller.js already queries for 'monthly_amount' — no change needed there)
+
+─────────────────────────────────────────────────────
+FINDING 4 (MEDIUM) — backup.cron.js documented but not wired
+─────────────────────────────────────────────────────
+Files changed:
+  - server/server.js
+      Added conditional dynamic import of startBackupCronJob when
+      ENABLE_BACKUP_CRON === 'true'
+  - server/.env.example
+      Added ENABLE_BACKUP_CRON=false with documentation
+  - server/render.yaml
+      Added ENABLE_BACKUP_CRON env var (value: "false")
+
+─────────────────────────────────────────────────────
+BUILD VERIFICATION
+─────────────────────────────────────────────────────
+client/npm run build — EXIT 0 ✓
+  432 modules transformed, dist built in ~22s

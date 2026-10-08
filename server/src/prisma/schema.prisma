@@ -90,6 +90,7 @@ model User {
   status               UserStatus @default(PENDING)
   memberType           MemberType @default(NEW)
   bankName             String
+  bankCode             String     @default("")
   accountNumber        String
   accountName          String
   paystackRecipientCode String?

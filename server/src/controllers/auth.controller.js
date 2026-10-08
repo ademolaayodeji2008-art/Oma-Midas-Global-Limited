@@ -23,7 +23,7 @@ const COOKIE_OPTIONS = {
 // ---------------------------------------------------------------------------
 export async function register(req, res, next) {
   try {
-    const { fullName, email, phone, password, bankName, accountNumber, accountName } = req.validated;
+    const { fullName, email, phone, password, bankName, bankCode, accountNumber, accountName } = req.validated;
 
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
@@ -39,6 +39,7 @@ export async function register(req, res, next) {
         phone,
         passwordHash,
         bankName,
+        bankCode,
         accountNumber,
         accountName,
         status: 'PENDING',
@@ -132,7 +133,7 @@ export function me(req, res) {
 // ---------------------------------------------------------------------------
 export async function updateProfile(req, res, next) {
   try {
-    const { fullName, phone, bankName, accountNumber, accountName } = req.body;
+    const { fullName, phone, bankName, bankCode, accountNumber, accountName } = req.body;
 
     const updated = await prisma.user.update({
       where: { id: req.user.id },
@@ -140,6 +141,7 @@ export async function updateProfile(req, res, next) {
         ...(fullName && { fullName }),
         ...(phone && { phone }),
         ...(bankName && { bankName }),
+        ...(bankCode && { bankCode }),
         ...(accountNumber && { accountNumber }),
         ...(accountName && { accountName }),
         // Reset Paystack recipient code if bank details changed
@@ -154,6 +156,7 @@ export async function updateProfile(req, res, next) {
         status: true,
         memberType: true,
         bankName: true,
+        bankCode: true,
         accountNumber: true,
         accountName: true,
         updatedAt: true,
