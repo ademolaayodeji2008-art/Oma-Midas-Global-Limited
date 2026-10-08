@@ -65,7 +65,9 @@ export default function MemberDashboard() {
           .filter((c) => c.status === 'PAID')
           .reduce((sum, c) => sum + (c.amountKobo || 0), 0);
 
-        const activeLoan = loans.find((l) => l.status === 'ACTIVE' || l.status === 'DISBURSED');
+        const activeLoan = loans.find((l) =>
+          l.status === 'APPROVED' || l.status === 'DISBURSED' || l.status === 'REPAYING'
+        );
         setStats({ savingsKobo, activeLoan, contribs });
       })
       .catch(() => {})
