@@ -3,6 +3,7 @@
  */
 
 import React, { useEffect, useState, useCallback } from 'react';
+import { DollarSign, XCircle, Clock, CheckCircle, CornerUpLeft, Info, Bell } from 'lucide-react';
 import AppLayout from '../../components/layout/AppLayout';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
@@ -45,13 +46,13 @@ export default function Notifications() {
     }
   };
 
-  const typeIcon = {
-    LOAN_APPROVED: '💰',
-    LOAN_REJECTED: '❌',
-    CONTRIBUTION_DUE: '⏰',
-    CONTRIBUTION_CONFIRMED: '✅',
-    REFUND_APPROVED: '↩️',
-    GENERAL: 'ℹ️',
+  const typeIconMap = {
+    LOAN_APPROVED: DollarSign,
+    LOAN_REJECTED: XCircle,
+    CONTRIBUTION_DUE: Clock,
+    CONTRIBUTION_CONFIRMED: CheckCircle,
+    REFUND_APPROVED: CornerUpLeft,
+    GENERAL: Info,
   };
 
   return (
@@ -69,7 +70,7 @@ export default function Notifications() {
             </div>
           ) : notifications.length === 0 ? (
             <div className="text-center py-10 text-gray-400">
-              <p className="text-3xl mb-2" aria-hidden="true">🔔</p>
+              <Bell size={32} className="mx-auto mb-2 text-gray-300" aria-hidden="true" />
               <p className="text-sm">No notifications yet.</p>
             </div>
           ) : (
@@ -79,9 +80,7 @@ export default function Notifications() {
                   key={n.id}
                   className={['py-4 flex gap-3', !n.isRead ? 'bg-blush/30 -mx-6 px-6' : ''].join(' ')}
                 >
-                  <span className="text-xl flex-shrink-0" aria-hidden="true">
-                    {typeIcon[n.type] || 'ℹ️'}
-                  </span>
+                  {(() => { const Icon = typeIconMap[n.type] || Info; return <Icon size={20} aria-hidden="true" className="flex-shrink-0 text-primary mt-0.5" />; })()}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
                       <p className={['text-sm font-medium', !n.isRead ? 'text-charcoal' : 'text-gray-600'].join(' ')}>

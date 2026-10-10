@@ -1,0 +1,23 @@
+{
+  "id": "FEAT-001",
+  "type": "fix",
+  "description": "Replace all remaining emoji characters in member-facing pages with Lucide React icons. Affected files: client/src/pages/member/Notifications.jsx (typeIcon map uses emoji strings + empty-state 🔔) and client/src/pages/public/Landing.jsx (steps[] and benefits[] arrays use emoji icon strings). Navbar.jsx, AppLayout.jsx, Sidebar.jsx, and MobileMenu.jsx already use Lucide icons exclusively — no changes needed there.",
+  "status": "completed",
+  "steps": [
+    "Edit client/src/pages/member/Notifications.jsx: import { DollarSign, XCircle, Clock, CheckCircle, CornerUpLeft, Info, Bell } from 'lucide-react'. Replace the typeIcon string map with a typeIconMap that maps each type to a Lucide component. In the notification list item, render the icon as <typeIconMap[n.type] size={20} aria-hidden='true' className='flex-shrink-0 text-primary mt-0.5' /> instead of the emoji span. Replace the empty-state emoji <p className='text-3xl mb-2'>🔔</p> with <Bell size={32} className='mx-auto mb-2 text-gray-300' aria-hidden='true' />.",
+    "Edit client/src/pages/public/Landing.jsx: import { PenLine, Coins, ClipboardList, Banknote, Lock, BarChart2, Lightbulb } from 'lucide-react'. Update the steps[] array: replace each emoji string icon with the correct Lucide component reference (PenLine for ✍️, Coins for 💰, ClipboardList for 📋, Banknote for 💸). Update the benefits[] array: replace each emoji string icon with the correct Lucide component (Lock for 🔒, BarChart2 for 📊, Lightbulb for 💡). In the JSX for both the How It Works and Benefits sections, change <div className='text-4xl mb-3' aria-hidden='true'>{step.icon}</div> to <step.Icon size={40} className='mx-auto mb-3 text-accent' aria-hidden='true' /> — the data array field must be named Icon (capital I) so it is treated as a component. Update type declarations accordingly."
+  ],
+  "acceptance_criteria": [
+    "No emoji characters (Unicode range U+1F300 and above) appear in Notifications.jsx or Landing.jsx",
+    "All notification type icons render as Lucide SVG components, not as text/emoji spans",
+    "The empty-state in Notifications.jsx shows a Bell icon instead of a 🔔 emoji",
+    "The How It Works and Benefits sections on Landing.jsx show Lucide icon components instead of emoji text",
+    "Running `npm run build` from client/ exits 0 with no errors"
+  ],
+  "verification": [
+    "cd client && npm run build — must exit 0 with no import or JSX errors",
+    "Grep for emoji patterns to confirm none remain: grep -rn --include='*.jsx' '[\\x{1F300}-\\x{1FFFF}]' client/src/pages/member/Notifications.jsx client/src/pages/public/Landing.jsx — should return no matches"
+  ],
+  "blocked_reason": null,
+  "findings": "All emoji replaced with Lucide icons. Notifications.jsx: typeIconMap with DollarSign/XCircle/Clock/CheckCircle/CornerUpLeft/Info; empty-state uses Bell. Landing.jsx: steps[] and benefits[] use PenLine/Coins/ClipboardList/Banknote/Lock/BarChart2/Lightbulb as Icon components. Build exits 0."
+}

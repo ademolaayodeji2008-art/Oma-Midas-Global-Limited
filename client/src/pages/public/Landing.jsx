@@ -5,6 +5,7 @@
 import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
+import { PenLine, Coins, ClipboardList, Banknote, Lock, BarChart2, Lightbulb } from 'lucide-react';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/layout/Footer';
 import LoanCalculator from '../../components/forms/LoanCalculator';
@@ -37,16 +38,16 @@ function FadeUpSection({ children, className = '' }) {
 }
 
 const steps = [
-  { icon: '✍️', title: 'Sign Up', desc: 'Register with your details and bank account. Approval takes 1-2 business days.' },
-  { icon: '💰', title: 'Save Monthly', desc: 'Make your monthly contribution to build your savings record and eligibility.' },
-  { icon: '📋', title: 'Apply for a Loan', desc: 'Once eligible, request a loan up to your multiplier limit with flexible terms.' },
-  { icon: '💸', title: 'Receive Funds', desc: 'Approved loans are disbursed directly to your bank account within 24 hours.' },
+  { Icon: PenLine, title: 'Sign Up', desc: 'Register with your details and bank account. Approval takes 1-2 business days.' },
+  { Icon: Coins, title: 'Save Monthly', desc: 'Make your monthly contribution to build your savings record and eligibility.' },
+  { Icon: ClipboardList, title: 'Apply for a Loan', desc: 'Once eligible, request a loan up to your multiplier limit with flexible terms.' },
+  { Icon: Banknote, title: 'Receive Funds', desc: 'Approved loans are disbursed directly to your bank account within 24 hours.' },
 ];
 
 const benefits = [
-  { icon: '🔒', title: 'Secure Savings', desc: 'Your savings are held in a transparent, cooperative fund with full ledger visibility.' },
-  { icon: '📊', title: 'Flexible Loans', desc: 'Access loans based on your savings history with competitive, transparent fees.' },
-  { icon: '💡', title: 'Transparent Process', desc: 'Every transaction is recorded and available for your review at any time.' },
+  { Icon: Lock, title: 'Secure Savings', desc: 'Your savings are held in a transparent, cooperative fund with full ledger visibility.' },
+  { Icon: BarChart2, title: 'Flexible Loans', desc: 'Access loans based on your savings history with competitive, transparent fees.' },
+  { Icon: Lightbulb, title: 'Transparent Process', desc: 'Every transaction is recorded and available for your review at any time.' },
 ];
 
 const faqs = [
@@ -160,7 +161,7 @@ export default function Landing() {
             {steps.map((step, i) => (
               <FadeUpSection key={i}>
                 <div className="card-base text-center hover:shadow-hover transition-shadow">
-                  <div className="text-4xl mb-3" aria-hidden="true">{step.icon}</div>
+                  <step.Icon size={40} className="mx-auto mb-3 text-accent" aria-hidden="true" />
                   <h3 className="font-heading font-bold text-primary mb-2">{step.title}</h3>
                   <p className="text-sm text-gray-500 leading-relaxed">{step.desc}</p>
                 </div>
@@ -178,7 +179,7 @@ export default function Landing() {
             {benefits.map((b, i) => (
               <FadeUpSection key={i}>
                 <div className="card-base text-center hover:shadow-hover transition-shadow">
-                  <div className="text-4xl mb-3" aria-hidden="true">{b.icon}</div>
+                  <b.Icon size={40} className="mx-auto mb-3 text-accent" aria-hidden="true" />
                   <h3 className="font-heading font-bold text-primary mb-2">{b.title}</h3>
                   <p className="text-sm text-gray-500 leading-relaxed">{b.desc}</p>
                 </div>
