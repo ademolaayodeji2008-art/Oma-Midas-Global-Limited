@@ -8,8 +8,8 @@ import { motion } from 'framer-motion';
 const variants = {
   primary: 'bg-primary text-white hover:bg-opacity-90 focus:ring-accent',
   secondary: 'bg-accent text-white hover:bg-opacity-90 focus:ring-accent',
-  outline: 'border border-primary text-primary hover:bg-blush focus:ring-primary',
-  ghost: 'text-primary hover:bg-blush focus:ring-primary',
+  outline: 'border border-primary text-primary hover:bg-sectionBg focus:ring-primary',
+  ghost: 'text-primary hover:bg-sectionBg focus:ring-primary',
   danger: 'bg-error text-white hover:bg-opacity-90 focus:ring-error',
 };
 

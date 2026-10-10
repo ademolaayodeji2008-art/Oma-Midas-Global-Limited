@@ -143,7 +143,7 @@ export default function Members() {
               onClick={() => setTab(t)}
               className={[
                 'px-4 py-2 rounded-xl text-sm font-medium transition-colors',
-                tab === t ? 'bg-primary text-white' : 'bg-white border border-gray-200 text-charcoal hover:bg-blush',
+                tab === t ? 'bg-primary text-white' : 'bg-white border border-gray-200 text-charcoal hover:bg-sectionBg',
               ].join(' ')}
             >
               {t === 'pending' ? `Pending Approvals${pending.length > 0 ? ` (${pending.length})` : ''}` : 'All Members'}

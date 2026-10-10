@@ -79,7 +79,7 @@ export default function Navbar() {
         {/* Mobile hamburger */}
         <button
           type="button"
-          className="md:hidden p-2 rounded-xl text-primary hover:bg-blush transition-colors"
+          className="md:hidden p-2 rounded-xl text-primary hover:bg-sectionBg transition-colors"
           onClick={() => setMenuOpen((v) => !v)}
           aria-label={menuOpen ? 'Close menu' : 'Open menu'}
           aria-expanded={menuOpen}

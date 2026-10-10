@@ -4,14 +4,17 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: '#4A1D4F',
-        accent: '#C9A86A',
-        blush: '#F4E1E6',
-        background: '#FAF7F5',
-        charcoal: '#2B2B2B',
-        success: '#2E7D5B',
-        warning: '#D9962B',
-        error: '#B3392F',
+        primary:     '#2D1B69',
+        accent:      '#C9A86A',
+        accentLight: '#E8C98A',
+        sidebarBg:   '#1E1433',
+        sidebarText: '#F5F0FF',
+        sectionBg:   '#F8F5FF',
+        background:  '#F5F3FF',
+        charcoal:    '#1A1A2E',
+        success:     '#16A34A',
+        warning:     '#D97706',
+        error:       '#DC2626',
       },
       fontFamily: {
         heading: ['"Playfair Display"', 'serif'],
@@ -22,8 +25,8 @@ export default {
         '2xl': '16px',
       },
       boxShadow: {
-        card: '0 2px 16px rgba(74, 29, 79, 0.08)',
-        hover: '0 4px 24px rgba(74, 29, 79, 0.16)',
+        card:  '0 2px 16px rgba(45,27,105,0.08)',
+        hover: '0 4px 24px rgba(45,27,105,0.16)',
       },
     },
   },

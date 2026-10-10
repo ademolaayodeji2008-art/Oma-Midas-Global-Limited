@@ -78,7 +78,7 @@ export default function Notifications() {
               {notifications.map((n) => (
                 <li
                   key={n.id}
-                  className={['py-4 flex gap-3', !n.isRead ? 'bg-blush/30 -mx-6 px-6' : ''].join(' ')}
+                  className={['py-4 flex gap-3', !n.isRead ? 'bg-sectionBg/50 -mx-6 px-6' : ''].join(' ')}
                 >
                   {(() => { const Icon = typeIconMap[n.type] || Info; return <Icon size={20} aria-hidden="true" className="flex-shrink-0 text-primary mt-0.5" />; })()}
                   <div className="flex-1 min-w-0">

@@ -1,0 +1,26 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Redesign the color scheme to a premium dark-sidebar palette. This involves three files: (1) client/tailwind.config.js — update colors and box-shadow tokens, (2) client/src/styles/index.css — update CSS custom properties and component utilities, (3) client/src/components/layout/Sidebar.jsx — apply dark sidebar styles using the new palette. The new palette replaces the current purple/blush scheme with a deep navy primary, dark sidebar, gold accent, and light section backgrounds. FEAT-001 must be complete first so the Landing.jsx icon update picks up the new `text-accent` color class.",
+  "status": "completed",
+  "steps": [
+    "Edit client/tailwind.config.js: replace the colors block with: primary:'#2D1B69', accent:'#C9A86A', accentLight:'#E8C98A', sidebarBg:'#1E1433', sidebarText:'#F5F0FF', sectionBg:'#F8F5FF', background:'#F5F3FF', charcoal:'#1A1A2E', success:'#16A34A', warning:'#D97706', error:'#DC2626'. Remove the old blush color. Update boxShadow card to '0 2px 16px rgba(45,27,105,0.08)' and hover to '0 4px 24px rgba(45,27,105,0.16)'.",
+    "Edit client/src/styles/index.css: update all --color-* CSS custom properties to match the new palette exactly: --color-primary:#2D1B69, --color-accent:#C9A86A, --color-accent-light:#E8C98A, --color-sidebar-bg:#1E1433, --color-sidebar-text:#F5F0FF, --color-section-bg:#F8F5FF, --color-background:#F5F3FF, --color-charcoal:#1A1A2E, --color-success:#16A34A, --color-warning:#D97706, --color-error:#DC2626. Remove --color-blush. Update --shadow-card and --shadow-hover rgba values from '74, 29, 79' to '45, 27, 105'. Update .btn-secondary to use hover:bg-sectionBg instead of hover:bg-blush.",
+    "Edit client/src/components/layout/Sidebar.jsx: update the desktop <aside> class from 'bg-white border-r border-gray-100' to 'bg-[#1E1433] border-r border-[#2D1B69]'. Update the mobile <motion.aside> class from 'bg-white' to 'bg-[#1E1433]'. Update the Logo section border from 'border-gray-100' to 'border-[#2D1B69]/40'. Update the logo <span> from 'text-primary' to 'text-[#C9A86A]'. Update the User section border from 'border-gray-100' to 'border-[#2D1B69]/40'. Update the user initials avatar from 'bg-primary text-white' to 'bg-[#C9A86A] text-[#1E1433]'. Update the user name from 'text-charcoal' to 'text-[#F5F0FF]'. Update the role label from 'text-gray-400' to 'text-[#F5F0FF]/60'. Update linkClass isActive from 'bg-primary text-white' to 'bg-[#C9A86A] text-[#1E1433] font-bold'. Update linkClass inactive from 'text-charcoal hover:bg-blush hover:text-primary' to 'text-[#F5F0FF]/80 hover:bg-[#2D1B69] hover:text-[#F5F0FF]'. Update the logout border from 'border-gray-100' to 'border-[#2D1B69]/40'. Update the logout button from 'text-charcoal hover:bg-red-50 hover:text-error' to 'text-[#F5F0FF]/70 hover:bg-red-900/20 hover:text-red-400'.",
+    "Audit AppLayout.jsx: the mobile hamburger button uses 'text-primary hover:bg-blush' — update hover to 'hover:bg-sectionBg'. The header uses 'bg-white border-b border-gray-100' — no change needed (header stays white). This is a minor tweak to remove the now-deleted blush reference.",
+    "Audit Members.jsx (admin) and any other file referencing 'hover:bg-blush' or 'bg-blush' — replace with 'hover:bg-sectionBg' or 'bg-sectionBg'. Run grep on all client/src jsx files to find remaining blush references and update each one."
+  ],
+  "acceptance_criteria": [
+    "client/tailwind.config.js contains the exact new color tokens with no blush key",
+    "client/src/styles/index.css CSS variables match the new palette",
+    "Sidebar renders with a dark (#1E1433) background, gold (#C9A86A) active links, and light text",
+    "No JSX file in client/src references the removed blush Tailwind class (would cause a runtime class-not-found issue, though Tailwind silently drops unknown classes — verify visually via build)",
+    "Running `npm run build` from client/ exits 0"
+  ],
+  "verification": [
+    "cd client && npm run build — must exit 0",
+    "grep -rn 'bg-blush\\|hover:bg-blush' client/src — should return 0 matches after audit step"
+  ],
+  "blocked_reason": null,
+  "findings": "All blush references removed from 13 files: Sidebar.jsx, AppLayout.jsx, Navbar.jsx, Button.jsx, NotificationBell.jsx, Pagination.jsx, Table.jsx, Members.jsx (admin), AuditLog.jsx, Loans.jsx (admin), LoanSummary.jsx (admin), LoanSummary.jsx (member), Notifications.jsx (member), Landing.jsx (public). New sectionBg token used as replacement throughout. Build passes exit 0."
+}

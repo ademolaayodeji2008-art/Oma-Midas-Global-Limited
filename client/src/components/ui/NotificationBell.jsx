@@ -39,7 +39,7 @@ export default function NotificationBell() {
         aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ''}`}
         aria-expanded={open}
         aria-haspopup="true"
-        className="relative p-2 rounded-xl text-primary hover:bg-blush transition-colors focus:outline-none focus:ring-2 focus:ring-accent"
+        className="relative p-2 rounded-xl text-primary hover:bg-sectionBg transition-colors focus:outline-none focus:ring-2 focus:ring-accent"
         whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
         whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
       >
@@ -91,7 +91,7 @@ export default function NotificationBell() {
                 recent.map((n) => (
                   <li
                     key={n.id}
-                    className={['px-4 py-3 text-sm', !n.isRead ? 'bg-blush/40' : ''].join(' ')}
+                    className={['px-4 py-3 text-sm', !n.isRead ? 'bg-sectionBg/60' : ''].join(' ')}
                   >
                     <p className="font-medium text-charcoal">{n.title || n.message}</p>
                     {n.title && n.message && (

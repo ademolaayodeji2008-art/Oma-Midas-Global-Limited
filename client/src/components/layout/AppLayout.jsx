@@ -32,7 +32,7 @@ export default function AppLayout({ title, children }) {
           {/* Mobile menu toggle */}
           <button
             type="button"
-            className="md:hidden p-2 rounded-xl text-primary hover:bg-blush transition-colors"
+            className="md:hidden p-2 rounded-xl text-primary hover:bg-sectionBg transition-colors"
             onClick={() => setMobileSidebarOpen(true)}
             aria-label="Open navigation"
           >

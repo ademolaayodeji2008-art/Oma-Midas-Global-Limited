@@ -117,7 +117,7 @@ export default function Loans() {
                 onClick={() => { setStatusFilter(s); setPage(1); }}
                 className={[
                   'px-3 py-1.5 rounded-xl text-xs font-medium transition-colors',
-                  statusFilter === s ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-blush',
+                  statusFilter === s ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-sectionBg',
                 ].join(' ')}
               >
                 {s}
@@ -130,7 +130,7 @@ export default function Loans() {
           {/* Expanded schedule */}
           {loans.map((loan) =>
             expandedId === loan.id ? (
-              <div key={`sched-${loan.id}`} className="mt-2 mb-4 ml-4 p-4 bg-blush rounded-xl">
+              <div key={`sched-${loan.id}`} className="mt-2 mb-4 ml-4 p-4 bg-sectionBg rounded-xl">
                 <p className="text-xs font-semibold text-primary mb-2">Repayment Schedule</p>
                 {(loan.repaymentSchedule || []).length === 0 ? (
                   <p className="text-xs text-gray-400">No schedule found.</p>

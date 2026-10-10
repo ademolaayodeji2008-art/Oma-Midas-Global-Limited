@@ -16,7 +16,7 @@ export default function Table({ columns = [], data = [], loading = false, emptyM
     <div className="w-full overflow-x-auto rounded-2xl border border-gray-100">
       <table className="w-full text-sm text-left">
         <thead>
-          <tr className="bg-blush border-b border-gray-100">
+          <tr className="bg-sectionBg border-b border-gray-100">
             {columns.map((col) => (
               <th
                 key={col.key}
@@ -55,7 +55,7 @@ export default function Table({ columns = [], data = [], loading = false, emptyM
                 key={row.id || i}
                 className={[
                   i % 2 === 0 ? 'bg-white' : 'bg-gray-50',
-                  'hover:bg-blush transition-colors',
+                  'hover:bg-sectionBg transition-colors',
                 ].join(' ')}
               >
                 {columns.map((col) => (

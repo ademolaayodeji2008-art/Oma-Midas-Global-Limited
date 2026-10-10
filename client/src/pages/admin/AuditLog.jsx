@@ -70,7 +70,7 @@ export default function AuditLog() {
           {/* Expanded metadata */}
           {logs.map((log) =>
             expandedId === log.id ? (
-              <div key={`meta-${log.id}`} className="mt-2 p-3 bg-blush rounded-xl text-xs font-mono overflow-x-auto">
+              <div key={`meta-${log.id}`} className="mt-2 p-3 bg-sectionBg rounded-xl text-xs font-mono overflow-x-auto">
                 <pre>{JSON.stringify(log.metadata, null, 2)}</pre>
               </div>
             ) : null

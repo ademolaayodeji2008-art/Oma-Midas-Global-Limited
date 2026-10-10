@@ -172,7 +172,7 @@ export default function Landing() {
       </section>
 
       {/* ── Benefits ─────────────────────────────────────── */}
-      <section className="py-20 px-6 bg-blush">
+      <section className="py-20 px-6 bg-sectionBg">
         <FadeUpSection className="max-w-5xl mx-auto">
           <h2 className="font-heading text-3xl font-bold text-primary text-center mb-12">Why Choose Us</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -200,7 +200,7 @@ export default function Landing() {
       </section>
 
       {/* ── FAQ ──────────────────────────────────────────── */}
-      <section className="py-20 px-6 bg-blush">
+      <section className="py-20 px-6 bg-sectionBg">
         <FadeUpSection className="max-w-2xl mx-auto">
           <h2 className="font-heading text-3xl font-bold text-primary text-center mb-10">
             Frequently Asked Questions

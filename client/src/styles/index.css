@@ -12,14 +12,17 @@
 
 :root {
   /* Brand colours */
-  --color-primary:    #4A1D4F;
-  --color-accent:     #C9A86A;
-  --color-blush:      #F4E1E6;
-  --color-background: #FAF7F5;
-  --color-charcoal:   #2B2B2B;
-  --color-success:    #2E7D5B;
-  --color-warning:    #D9962B;
-  --color-error:      #B3392F;
+  --color-primary:      #2D1B69;
+  --color-accent:       #C9A86A;
+  --color-accent-light: #E8C98A;
+  --color-sidebar-bg:   #1E1433;
+  --color-sidebar-text: #F5F0FF;
+  --color-section-bg:   #F8F5FF;
+  --color-background:   #F5F3FF;
+  --color-charcoal:     #1A1A2E;
+  --color-success:      #16A34A;
+  --color-warning:      #D97706;
+  --color-error:        #DC2626;
 
   /* Semantic aliases */
   --bg:   var(--color-background);
@@ -34,8 +37,8 @@
   --radius-2xl: 16px;
 
   /* Shadows */
-  --shadow-card:  0 2px 16px rgba(74, 29, 79, 0.08);
-  --shadow-hover: 0 4px 24px rgba(74, 29, 79, 0.16);
+  --shadow-card:  0 2px 16px rgba(45, 27, 105, 0.08);
+  --shadow-hover: 0 4px 24px rgba(45, 27, 105, 0.16);
 }
 
 /* =============================================================================
@@ -100,7 +103,7 @@
   /* Secondary / outline button */
   .btn-secondary {
     @apply border border-primary text-primary px-6 py-3 rounded-xl font-semibold
-           hover:bg-blush transition-all duration-200 cursor-pointer
+           hover:bg-sectionBg transition-all duration-200 cursor-pointer
            focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2;
   }
 
