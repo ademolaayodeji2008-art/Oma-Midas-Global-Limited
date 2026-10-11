@@ -22,20 +22,24 @@ import MemberDashboard from './pages/member/Dashboard';
 import Contributions from './pages/member/Contributions';
 import LoanRequest from './pages/member/LoanRequest';
 import LoanRepayment from './pages/member/LoanRepayment';
+import MemberLoanSummary from './pages/member/LoanSummary';
 import Refund from './pages/member/Refund';
 import Transactions from './pages/member/Transactions';
 import Profile from './pages/member/Profile';
 import Notifications from './pages/member/Notifications';
+import ClearanceCard from './pages/member/ClearanceCard';
 
 // Admin pages
 import AdminDashboard from './pages/admin/Dashboard';
 import Members from './pages/admin/Members';
 import Loans from './pages/admin/Loans';
+import LoanSummary from './pages/admin/LoanSummary';
 import Refunds from './pages/admin/Refunds';
 import CompanyFund from './pages/admin/CompanyFund';
 import Reports from './pages/admin/Reports';
 import AuditLog from './pages/admin/AuditLog';
 import Settings from './pages/admin/Settings';
+import MemberClearanceCard from './pages/admin/MemberClearanceCard';
 
 /** Loading spinner shown while auth is being resolved. */
 function LoadingScreen() {
@@ -98,20 +102,24 @@ function AnimatedRoutes() {
         <Route path="/member/contributions" element={<ProtectedRoute requiredRole="MEMBER"><Contributions /></ProtectedRoute>} />
         <Route path="/member/loan-request" element={<ProtectedRoute requiredRole="MEMBER"><LoanRequest /></ProtectedRoute>} />
         <Route path="/member/loan-repayment" element={<ProtectedRoute requiredRole="MEMBER"><LoanRepayment /></ProtectedRoute>} />
+        <Route path="/member/loan-summary" element={<ProtectedRoute requiredRole="MEMBER"><MemberLoanSummary /></ProtectedRoute>} />
         <Route path="/member/refund" element={<ProtectedRoute requiredRole="MEMBER"><Refund /></ProtectedRoute>} />
         <Route path="/member/transactions" element={<ProtectedRoute requiredRole="MEMBER"><Transactions /></ProtectedRoute>} />
         <Route path="/member/profile" element={<ProtectedRoute requiredRole="MEMBER"><Profile /></ProtectedRoute>} />
         <Route path="/member/notifications" element={<ProtectedRoute requiredRole="MEMBER"><Notifications /></ProtectedRoute>} />
+        <Route path="/member/clearance-card" element={<ProtectedRoute requiredRole="MEMBER"><ClearanceCard /></ProtectedRoute>} />
 
         {/* Admin routes */}
         <Route path="/admin/dashboard" element={<ProtectedRoute requiredRole="ADMIN"><AdminDashboard /></ProtectedRoute>} />
         <Route path="/admin/members" element={<ProtectedRoute requiredRole="ADMIN"><Members /></ProtectedRoute>} />
         <Route path="/admin/loans" element={<ProtectedRoute requiredRole="ADMIN"><Loans /></ProtectedRoute>} />
+        <Route path="/admin/loan-summary" element={<ProtectedRoute requiredRole="ADMIN"><LoanSummary /></ProtectedRoute>} />
         <Route path="/admin/refunds" element={<ProtectedRoute requiredRole="ADMIN"><Refunds /></ProtectedRoute>} />
         <Route path="/admin/company-fund" element={<ProtectedRoute requiredRole="ADMIN"><CompanyFund /></ProtectedRoute>} />
         <Route path="/admin/reports" element={<ProtectedRoute requiredRole="ADMIN"><Reports /></ProtectedRoute>} />
         <Route path="/admin/audit-log" element={<ProtectedRoute requiredRole="ADMIN"><AuditLog /></ProtectedRoute>} />
         <Route path="/admin/settings" element={<ProtectedRoute requiredRole="ADMIN"><Settings /></ProtectedRoute>} />
+        <Route path="/admin/members/:id/clearance-card" element={<ProtectedRoute requiredRole="ADMIN"><MemberClearanceCard /></ProtectedRoute>} />
 
         {/* Catch-all */}
         <Route path="*" element={<Navigate to="/" replace />} />

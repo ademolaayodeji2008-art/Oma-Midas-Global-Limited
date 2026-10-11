@@ -61,6 +61,14 @@ async function main() {
       value: '500000',
     },
     {
+      key: 'dividend_rate',
+      value: '5',
+    },
+    {
+      key: 'deduction_return_rate',
+      value: '10',
+    },
+    {
       key: 'terms_and_conditions',
       value: `<p>Terms and conditions for Oma Midas Global Limited cooperative membership.</p>
 <p>By registering as a member, you agree to contribute a fixed monthly amount to the cooperative savings pool. Your contributions form the basis of your eligibility for cooperative loans.</p>
@@ -83,22 +91,27 @@ async function main() {
   // -------------------------------------------------------------------------
   // 3. Active cooperative cycle
   // -------------------------------------------------------------------------
-  // Deactivate any previously active cycles before creating/activating the new one
+  // Determine the current cycle year: if today is Oct 1 or later, cycle starts
+  // this year; otherwise it started last year (Oct 1 to Sep 30).
+  const today = new Date();
+  const cycleStartYear = today.getMonth() >= 9 // October = month index 9
+    ? today.getFullYear()
+    : today.getFullYear() - 1;
+  const cycleEndYear = cycleStartYear + 1;
+  const cycleId = `seed-cycle-${cycleStartYear}-${cycleEndYear}`;
+
   await prisma.cycle.updateMany({
     where: { isActive: true },
     data: { isActive: false },
   });
 
   const cycle = await prisma.cycle.upsert({
-    where: {
-      // Upsert by a unique combination — we create a deterministic id for the seed cycle
-      id: 'seed-cycle-2024-2025',
-    },
+    where: { id: cycleId },
     update: { isActive: true },
     create: {
-      id: 'seed-cycle-2024-2025',
-      startDate: new Date('2024-10-01'),
-      endDate: new Date('2025-09-30'),
+      id: cycleId,
+      startDate: new Date(`${cycleStartYear}-10-01`),
+      endDate: new Date(`${cycleEndYear}-09-30`),
       isActive: true,
     },
   });

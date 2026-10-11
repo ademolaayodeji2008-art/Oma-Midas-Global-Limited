@@ -24,6 +24,7 @@ import {
   Search,
   Settings,
   LogOut,
+  WalletCards,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import Button from '../ui/Button';
@@ -38,6 +39,7 @@ const memberLinks = [
   { to: '/member/transactions',   label: 'Transactions',   Icon: ArrowLeftRight },
   { to: '/member/profile',        label: 'Profile',        Icon: User },
   { to: '/member/notifications',  label: 'Notifications',  Icon: Bell },
+  { to: '/member/clearance-card', label: 'Clearance Card', Icon: WalletCards },
 ];
 
 const adminLinks = [

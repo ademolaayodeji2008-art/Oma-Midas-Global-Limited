@@ -3,6 +3,7 @@
  */
 
 import React, { useEffect, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import AppLayout from '../../components/layout/AppLayout';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
@@ -16,6 +17,7 @@ import { useToast } from '../../components/ui/Toast';
 
 export default function Members() {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [tab, setTab] = useState('pending');
 
   // Pending
@@ -114,6 +116,11 @@ export default function Members() {
     { key: 'email', label: 'Email' },
     { key: 'status', label: 'Status', render: (v) => <Badge variant={v === 'ACTIVE' ? 'success' : v === 'REJECTED' ? 'error' : 'neutral'}>{v}</Badge> },
     { key: 'createdAt', label: 'Joined', render: (v) => v ? new Date(v).toLocaleDateString() : '—' },
+    {
+      key: 'viewCard', label: '', render: (_, row) => (
+        <Button variant="ghost" size="sm" onClick={() => navigate('/admin/members/' + row.id + '/clearance-card')}>View Card</Button>
+      ),
+    },
     {
       key: 'deactivate', label: '', render: (_, row) =>
         row.status === 'ACTIVE' ? (

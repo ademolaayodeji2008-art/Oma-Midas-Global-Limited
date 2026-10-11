@@ -28,6 +28,7 @@ import refundRoutes from './src/routes/refunds.routes.js';
 import notificationRoutes from './src/routes/notifications.routes.js';
 import paystackRoutes from './src/routes/paystack.routes.js';
 import adminRoutes from './src/routes/admin.routes.js';
+import clearanceRoutes from './src/routes/clearance.routes.js';
 
 import { errorHandler } from './src/middleware/errorHandler.middleware.js';
 import { generalLimiter } from './src/middleware/rateLimiter.middleware.js';
@@ -100,9 +101,21 @@ app.use('/api/refunds', refundRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/paystack', paystackRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/clearance-card', clearanceRoutes);
 
 // Public cycle endpoint
 app.get('/api/cycle', getCycleInfo);
+
+// Public terms and conditions endpoint (needed on signup page before auth)
+app.get('/api/public/terms', async (_req, res) => {
+  try {
+    const setting = await prisma.setting.findUnique({ where: { key: 'terms_and_conditions' } });
+    return res.json({ value: setting?.value || '' });
+  } catch (err) {
+    logger.error('Failed to fetch terms', err);
+    return res.status(500).json({ message: 'Failed to fetch terms' });
+  }
+});
 
 // Health check
 app.get('/health', async (_req, res) => {
