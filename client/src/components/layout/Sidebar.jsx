@@ -3,7 +3,7 @@
  * 240px on desktop, slide-in drawer on mobile.
  */
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import Button from '../ui/Button';
+import api from '../../lib/api';
 
 const memberLinks = [
   { to: '/member/dashboard',      label: 'Dashboard',      Icon: LayoutDashboard },
@@ -67,6 +68,14 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }) {
   const { user, isAdmin, logout } = useAuth();
   const navigate = useNavigate();
   const links = isAdmin ? adminLinks : memberLinks;
+  const [clearancePendingCount, setClearancePendingCount] = useState(0);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    api.get('/api/clearance-card/admin/pending')
+      .then((res) => setClearancePendingCount((res.data || []).length))
+      .catch(() => {});
+  }, [isAdmin]);
 
   const handleLogout = async () => {
     await logout();
@@ -110,6 +119,11 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }) {
               <NavLink to={to} className={linkClass} onClick={onMobileClose}>
                 <Icon size={17} aria-hidden="true" className="flex-shrink-0" />
                 {label}
+                {isAdmin && to === '/admin/members' && clearancePendingCount > 0 && (
+                  <span className="ml-auto inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-[#C9A86A] text-[#1E1433] text-[10px] font-bold leading-none">
+                    {clearancePendingCount}
+                  </span>
+                )}
               </NavLink>
             </li>
           ))}

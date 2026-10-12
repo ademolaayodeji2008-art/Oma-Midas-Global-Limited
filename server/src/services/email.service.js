@@ -309,6 +309,48 @@ export async function sendLoanRejectionEmail(user, loan) {
 }
 
 /**
+ * Send a clearance card authorized email to a member.
+ * @param {{fullName:string, email:string}} user
+ */
+export async function sendClearanceAuthorizedEmail(user) {
+  const html = htmlWrapper(
+    'Clearance Card Authorized',
+    heading('Your Clearance Card Has Been Authorized!') +
+      paragraph(`Dear <strong>${user.fullName}</strong>,`) +
+      paragraph(
+        'Great news! The cooperative administrator has authorized your clearance card. You can now view, print, and download your clearance card at any time.'
+      ) +
+      button(`${process.env.FRONTEND_URL || '#'}/member/clearance-card`, 'View Clearance Card') +
+      paragraph(
+        'If you have any questions, please contact the cooperative administrator.'
+      )
+  );
+  await send(user.email, 'Clearance card authorized — Oma Midas', html);
+}
+
+/**
+ * Send a clearance card request notification email to an admin.
+ * @param {{fullName:string, email:string}} admin
+ * @param {string} memberName
+ */
+export async function sendClearanceRequestEmail(admin, memberName) {
+  const html = htmlWrapper(
+    'New Clearance Card Request',
+    heading('New Clearance Card Authorization Request') +
+      paragraph(`Dear <strong>${admin.fullName}</strong>,`) +
+      paragraph(
+        `A member has requested clearance card authorization and is awaiting your review.`
+      ) +
+      infoBox([['Member Name', memberName]]) +
+      button(`${process.env.FRONTEND_URL || '#'}/admin/members`, 'Review Request') +
+      paragraph(
+        'Log in to the admin panel and navigate to Members → Clearance Requests to authorize or deny the request.'
+      )
+  );
+  await send(admin.email, 'New clearance card request — Oma Midas', html);
+}
+
+/**
  * Send a refund approval notification email.
  * @param {{fullName:string, email:string}} user
  * @param {{amountKobo:number}} refund

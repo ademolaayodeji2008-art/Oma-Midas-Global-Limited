@@ -1,15 +1,17 @@
 /**
  * ClearanceCard.jsx — Monthly Clearance Card for members.
  * Fetches GET /api/clearance-card and renders a printable premium card.
+ * Handles authorization states: NOT_REQUESTED, PENDING, DENIED, AUTHORIZED.
  */
 
 import React, { useEffect, useState } from 'react';
-import { WalletCards } from 'lucide-react';
+import { WalletCards, CreditCard, Clock, XCircle } from 'lucide-react';
 import AppLayout from '../../components/layout/AppLayout';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import PageTransition from '../../components/layout/PageTransition';
 import api from '../../lib/api';
+import { useToast } from '../../components/ui/Toast';
 
 /** Format kobo integer as Nigerian naira string, e.g. ₦12,500.00 */
 function formatNaira(kobo) {
@@ -32,16 +34,51 @@ function StatusBadge({ status }) {
 }
 
 export default function ClearanceCard() {
+  const { toast } = useToast();
   const [card, setCard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [clearanceStatus, setClearanceStatus] = useState(null); // NOT_REQUESTED | PENDING | DENIED
+  const [deniedReason, setDeniedReason] = useState(null);
+  const [requesting, setRequesting] = useState(false);
 
-  useEffect(() => {
+  const fetchCard = () => {
+    setLoading(true);
+    setError(null);
     api.get('/api/clearance-card')
-      .then((res) => setCard(res.data))
-      .catch((err) => setError(err.response?.data?.error || 'Failed to load clearance card.'))
+      .then((res) => {
+        setCard(res.data);
+        setClearanceStatus(null);
+        setDeniedReason(null);
+      })
+      .catch((err) => {
+        const status = err.response?.status;
+        const body = err.response?.data;
+        if (status === 403 && body?.clearanceStatus) {
+          setClearanceStatus(body.clearanceStatus);
+          setDeniedReason(body.deniedReason || null);
+        } else {
+          setError(body?.error || 'Failed to load clearance card.');
+        }
+      })
       .finally(() => setLoading(false));
-  }, []);
+  };
+
+  useEffect(fetchCard, []);
+
+  const handleRequestAuth = async () => {
+    setRequesting(true);
+    try {
+      await api.post('/api/clearance-card/request');
+      toast({ message: 'Authorization request submitted. You will be notified once reviewed.', type: 'success' });
+      setClearanceStatus('PENDING');
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Failed to submit request.';
+      toast({ message: msg, type: 'error' });
+    } finally {
+      setRequesting(false);
+    }
+  };
 
   return (
     <PageTransition>
@@ -60,13 +97,112 @@ export default function ClearanceCard() {
           </div>
         )}
 
-        {error && (
+        {/* Generic error */}
+        {!loading && error && (
           <Card className="max-w-lg mx-auto text-center py-10">
             <p className="text-red-500 font-medium">{error}</p>
           </Card>
         )}
 
-        {card && (
+        {/* STATE 1: NOT_REQUESTED */}
+        {!loading && clearanceStatus === 'NOT_REQUESTED' && (
+          <div className="max-w-md mx-auto">
+            <Card className="text-center py-10 px-6">
+              <div className="flex justify-center mb-4">
+                <div className="w-16 h-16 rounded-2xl bg-[#C9A86A]/10 flex items-center justify-center">
+                  <CreditCard size={36} className="text-[#C9A86A]" aria-hidden="true" />
+                </div>
+              </div>
+              <h2 className="font-heading font-bold text-primary text-xl mb-2">
+                Clearance Card Authorization
+              </h2>
+              <p className="text-gray-500 text-sm mb-6 leading-relaxed">
+                You need admin authorization to access your clearance card. Submit a request and the administrator will review it.
+              </p>
+              <button
+                type="button"
+                disabled={requesting}
+                onClick={handleRequestAuth}
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-primary text-white font-semibold text-sm hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+              >
+                {requesting ? (
+                  <>
+                    <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+                    Submitting…
+                  </>
+                ) : 'Request Authorization'}
+              </button>
+            </Card>
+          </div>
+        )}
+
+        {/* STATE 2: PENDING */}
+        {!loading && clearanceStatus === 'PENDING' && (
+          <div className="max-w-md mx-auto">
+            <Card className="text-center py-10 px-6">
+              <div className="flex justify-center mb-4">
+                <div className="w-16 h-16 rounded-2xl bg-amber-50 flex items-center justify-center">
+                  <Clock size={36} className="text-amber-500" aria-hidden="true" />
+                </div>
+              </div>
+              <h2 className="font-heading font-bold text-primary text-xl mb-2">
+                Authorization Pending
+              </h2>
+              <p className="text-gray-500 text-sm mb-6 leading-relaxed">
+                Your request has been submitted and is awaiting admin review. You will be notified once authorized.
+              </p>
+              <button
+                type="button"
+                disabled={requesting}
+                onClick={handleRequestAuth}
+                className="text-xs text-gray-400 hover:text-primary underline underline-offset-2 transition-colors disabled:opacity-50"
+              >
+                {requesting ? 'Submitting…' : 'Re-send request'}
+              </button>
+            </Card>
+          </div>
+        )}
+
+        {/* STATE 3: DENIED */}
+        {!loading && clearanceStatus === 'DENIED' && (
+          <div className="max-w-md mx-auto">
+            <Card className="text-center py-10 px-6">
+              <div className="flex justify-center mb-4">
+                <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center">
+                  <XCircle size={36} className="text-red-500" aria-hidden="true" />
+                </div>
+              </div>
+              <h2 className="font-heading font-bold text-primary text-xl mb-2">
+                Authorization Denied
+              </h2>
+              <p className="text-gray-500 text-sm mb-4 leading-relaxed">
+                Your clearance card authorization was denied.
+              </p>
+              {deniedReason && (
+                <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-sm text-red-700 text-left mb-6">
+                  <p className="font-semibold text-xs text-red-400 mb-1 uppercase tracking-wide">Reason</p>
+                  {deniedReason}
+                </div>
+              )}
+              <button
+                type="button"
+                disabled={requesting}
+                onClick={handleRequestAuth}
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-primary text-white font-semibold text-sm hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+              >
+                {requesting ? (
+                  <>
+                    <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+                    Submitting…
+                  </>
+                ) : 'Request Again'}
+              </button>
+            </Card>
+          </div>
+        )}
+
+        {/* STATE 4: AUTHORIZED — full clearance card */}
+        {!loading && card && (
           <div className="max-w-3xl mx-auto space-y-5">
             {/* Card header */}
             <div className="bg-[#1E1433] rounded-2xl px-6 py-5 flex items-center gap-4 shadow-lg">

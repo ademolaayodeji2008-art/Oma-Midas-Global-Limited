@@ -5,7 +5,7 @@
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
-  directUrl = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 generator client {
@@ -94,12 +94,15 @@ model User {
   accountNumber        String
   accountName          String
   paystackRecipientCode String?
-  passwordResetToken   String?
-  passwordResetExpires DateTime?
-  rejectionReason      String?
-  createdAt            DateTime   @default(now())
-  updatedAt            DateTime   @updatedAt
-  deletedAt            DateTime?
+  passwordResetToken    String?
+  passwordResetExpires  DateTime?
+  rejectionReason       String?
+  clearanceAuthorized   Boolean   @default(false)
+  clearanceRequestedAt  DateTime?
+  clearanceDeniedReason String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  deletedAt             DateTime?
 
   contributions  Contribution[]
   loans          Loan[]
