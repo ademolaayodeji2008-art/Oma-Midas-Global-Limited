@@ -17,6 +17,12 @@ const numericSettings = [
   { key: 'min_consecutive_months', label: 'Min. Consecutive Months', type: 'number', min: 1, step: 1 },
 ];
 
+const bankSettings = [
+  { key: 'coop_bank_name', label: 'Bank Name', placeholder: 'e.g. First Bank of Nigeria' },
+  { key: 'coop_account_number', label: 'Account Number', placeholder: 'e.g. 0123456789' },
+  { key: 'coop_account_name', label: 'Account Name', placeholder: 'e.g. Oma Midas Global Limited' },
+];
+
 export default function Settings() {
   const { toast } = useToast();
   const [settings, setSettings] = useState({});
@@ -107,6 +113,41 @@ export default function Settings() {
                         value={settings[setting.key] ?? ''}
                         onChange={(e) => setSettings((prev) => ({ ...prev, [setting.key]: e.target.value }))}
                         className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      />
+                    </div>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      loading={saving[setting.key]}
+                      onClick={() => handleSaveSetting(setting.key)}
+                    >
+                      Save
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </Card>
+
+            {/* Bank account details */}
+            <Card>
+              <h2 className="font-heading font-bold text-primary mb-4">Cooperative Bank Account</h2>
+              <p className="text-sm text-gray-500 mb-4">
+                Members will see these details when making contribution payments. Update this whenever your account changes.
+              </p>
+              <div className="space-y-4">
+                {bankSettings.map((setting) => (
+                  <div key={setting.key} className="flex items-end gap-3">
+                    <div className="flex-1">
+                      <label htmlFor={setting.key} className="block text-sm font-medium text-charcoal mb-1">
+                        {setting.label}
+                      </label>
+                      <input
+                        id={setting.key}
+                        type="text"
+                        value={settings[setting.key] ?? ''}
+                        onChange={(e) => setSettings((prev) => ({ ...prev, [setting.key]: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                        placeholder={setting.placeholder}
                       />
                     </div>
                     <Button

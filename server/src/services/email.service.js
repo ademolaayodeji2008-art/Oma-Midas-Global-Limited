@@ -351,6 +351,55 @@ export async function sendClearanceRequestEmail(admin, memberName) {
 }
 
 /**
+ * Send a contribution confirmed notification email.
+ * @param {{fullName:string, email:string}} user
+ * @param {{month:number, year:number, amountKobo:number}} details
+ */
+export async function sendContributionConfirmedEmail(user, { month, year, amountKobo }) {
+  const monthName = new Date(year, month - 1).toLocaleString('en-NG', { month: 'long' });
+  const amountNaira = (amountKobo / 100).toLocaleString('en-NG', { minimumFractionDigits: 2 });
+  const html = htmlWrapper(
+    'Contribution Confirmed',
+    heading('Contribution Payment Confirmed!') +
+      paragraph(`Dear <strong>${user.fullName}</strong>,`) +
+      paragraph(
+        'Great news! Your contribution payment has been verified and confirmed by the cooperative administrator.'
+      ) +
+      infoBox([
+        ['Month', `${monthName} ${year}`],
+        ['Amount', `₦${amountNaira}`],
+        ['Status', 'Paid'],
+      ]) +
+      paragraph('Your savings record has been updated. Thank you for keeping up with your contributions.') +
+      button(`${process.env.FRONTEND_URL || '#'}/member/contributions`, 'View Contributions')
+  );
+  await send(user.email, `Contribution confirmed — ${monthName} ${year}`, html);
+}
+
+/**
+ * Send a contribution rejected notification email.
+ * @param {{fullName:string, email:string}} user
+ * @param {{month:number, year:number, reason:string}} details
+ */
+export async function sendContributionRejectedEmail(user, { month, year, reason }) {
+  const monthName = new Date(year, month - 1).toLocaleString('en-NG', { month: 'long' });
+  const html = htmlWrapper(
+    'Contribution Payment Not Confirmed',
+    heading('Contribution Payment Not Confirmed') +
+      paragraph(`Dear <strong>${user.fullName}</strong>,`) +
+      paragraph(
+        `Your contribution payment submission for <strong>${monthName} ${year}</strong> could not be confirmed.`
+      ) +
+      infoBox([['Reason', reason || 'Not specified']]) +
+      paragraph(
+        'Please check the details and resubmit your payment. If you believe this is an error, contact the cooperative administrator.'
+      ) +
+      button(`${process.env.FRONTEND_URL || '#'}/member/contributions`, 'Resubmit Payment')
+  );
+  await send(user.email, `Contribution payment update — ${monthName} ${year}`, html);
+}
+
+/**
  * Send a refund approval notification email.
  * @param {{fullName:string, email:string}} user
  * @param {{amountKobo:number}} refund

@@ -111,11 +111,12 @@ export default function AdminDashboard() {
 
   const statCards = stats
     ? [
-        { label: 'Total Members', value: stats.totalMembers || 0, prefix: '' },
-        { label: 'Pending Approvals', value: stats.pendingApprovals || 0, prefix: '' },
-        { label: 'Total Savings (₦)', value: Math.round((stats.totalSavingsKobo || 0) / 100), prefix: '₦' },
-        { label: 'Company Fund (₦)', value: Math.round((stats.companyFundKobo || 0) / 100), prefix: '₦' },
-        { label: 'Loans Outstanding (₦)', value: Math.round((stats.totalLoansOutKobo || 0) / 100), prefix: '₦' },
+        { label: 'Total Members', value: stats.members?.total || 0, prefix: '' },
+        { label: 'Pending Approvals', value: stats.members?.pending || 0, prefix: '' },
+        { label: 'Active Members', value: stats.members?.active || 0, prefix: '' },
+        { label: 'Pending Payments', value: stats.contributions?.pending || 0, prefix: '' },
+        { label: 'Total Savings (₦)', value: Math.round((stats.totalContributionsKobo || 0) / 100), prefix: '₦' },
+        { label: 'Company Fund (₦)', value: Math.round((stats.companyFundBalanceKobo || 0) / 100), prefix: '₦' },
         { label: 'Repayments Received (₦)', value: Math.round((stats.totalRepaymentsKobo || 0) / 100), prefix: '₦' },
         { label: 'Paystack Balance (₦)', value: Math.round((stats.paystackBalanceKobo || 0) / 100), prefix: '₦' },
       ]
@@ -156,6 +157,9 @@ export default function AdminDashboard() {
                     </p>
                     {s.label === 'Pending Approvals' && s.value > 0 && (
                       <Badge variant="warning" className="mt-1">{s.value} pending</Badge>
+                    )}
+                    {s.label === 'Pending Payments' && s.value > 0 && (
+                      <Badge variant="warning" className="mt-1">{s.value} awaiting</Badge>
                     )}
                   </Card>
                 </motion.div>

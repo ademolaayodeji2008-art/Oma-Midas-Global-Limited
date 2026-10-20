@@ -1,11 +1,11 @@
 /**
  * contributions.controller.js — Member contribution endpoints.
+ * Manual bank-transfer flow (Paystack removed).
  */
 
 import { PrismaClient } from '@prisma/client';
-import { v4 as uuidv4 } from 'uuid';
-import { initializeTransaction } from '../services/paystack.service.js';
 import { getContributionPeriod } from '../utils/cycleHelpers.js';
+import { createNotification } from '../services/notification.service.js';
 import logger from '../utils/logger.js';
 
 const prisma = new PrismaClient();
@@ -40,8 +40,11 @@ export async function getMyContributions(req, res, next) {
         year: true,
         status: true,
         amountKobo: true,
+        amountSubmittedKobo: true,
+        paymentNote: true,
+        rejectionReason: true,
+        submittedAt: true,
         paidAt: true,
-        paystackRef: true,
         createdAt: true,
       },
     });
@@ -87,9 +90,28 @@ export async function getContributionStatus(req, res, next) {
 }
 
 // ---------------------------------------------------------------------------
-// initializePayment
+// getBankDetails — returns the cooperative's bank account details
 // ---------------------------------------------------------------------------
-export async function initializePayment(req, res, next) {
+export async function getBankDetails(req, res, next) {
+  try {
+    const keys = ['coop_bank_name', 'coop_account_number', 'coop_account_name'];
+    const settings = await prisma.setting.findMany({ where: { key: { in: keys } } });
+    const map = Object.fromEntries(settings.map((s) => [s.key, s.value]));
+
+    return res.json({
+      bankName: map.coop_bank_name || '',
+      accountNumber: map.coop_account_number || '',
+      accountName: map.coop_account_name || '',
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// submitPayment — member declares they have made a transfer
+// ---------------------------------------------------------------------------
+export async function submitPayment(req, res, next) {
   try {
     const cycle = await findActiveCycle();
     if (!cycle) {
@@ -97,9 +119,19 @@ export async function initializePayment(req, res, next) {
     }
 
     const { month, year } = getContributionPeriod();
-    const amountKobo = await getMonthlyAmountKobo();
+    const { amountKobo, paymentNote } = req.body;
 
-    // Check if already paid this month
+    if (!amountKobo || typeof amountKobo !== 'number' || amountKobo <= 0) {
+      return res.status(422).json({ error: 'amountKobo must be a positive number' });
+    }
+
+    const minAmount = await getMonthlyAmountKobo();
+    if (amountKobo < minAmount) {
+      return res.status(422).json({
+        error: `Amount must be at least ₦${(minAmount / 100).toLocaleString('en-NG')}`,
+      });
+    }
+
     const existing = await prisma.contribution.findUnique({
       where: {
         userId_cycleId_month_year: {
@@ -115,13 +147,22 @@ export async function initializePayment(req, res, next) {
       return res.status(400).json({ error: 'Contribution for this month has already been paid' });
     }
 
-    const reference = uuidv4();
+    if (existing?.status === 'PENDING_CONFIRMATION') {
+      return res.status(400).json({ error: 'Payment already submitted, awaiting confirmation' });
+    }
 
-    // Create or update the pending contribution record
+    const now = new Date();
+
     if (existing) {
       await prisma.contribution.update({
         where: { id: existing.id },
-        data: { paystackRef: reference },
+        data: {
+          status: 'PENDING_CONFIRMATION',
+          amountSubmittedKobo: amountKobo,
+          paymentNote: paymentNote || null,
+          rejectionReason: null,
+          submittedAt: now,
+        },
       });
     } else {
       await prisma.contribution.create({
@@ -130,27 +171,32 @@ export async function initializePayment(req, res, next) {
           cycleId: cycle.id,
           month,
           year,
-          amountKobo,
-          status: 'PENDING',
-          paystackRef: reference,
+          amountKobo: minAmount,
+          status: 'PENDING_CONFIRMATION',
+          amountSubmittedKobo: amountKobo,
+          paymentNote: paymentNote || null,
+          submittedAt: now,
         },
       });
     }
 
-    const paystackData = await initializeTransaction({
-      email: req.user.email,
-      amountKobo,
-      reference,
-      metadata: {
-        userId: req.user.id,
-        cycleId: cycle.id,
-        month,
-        year,
-        type: 'CONTRIBUTION',
-      },
-    });
+    // Notify all admins
+    const monthName = new Date(year, month - 1).toLocaleString('en-NG', { month: 'long' });
+    const amountNaira = (amountKobo / 100).toLocaleString('en-NG');
+    const admins = await prisma.user.findMany({ where: { role: 'ADMIN', status: 'ACTIVE' } });
 
-    return res.json({ authorization_url: paystackData.authorization_url, reference });
+    await Promise.all(
+      admins.map((admin) =>
+        createNotification(prisma, {
+          userId: admin.id,
+          title: 'New Contribution Payment Submitted',
+          message: `${req.user.fullName} has submitted a contribution payment of ₦${amountNaira} for ${monthName} ${year}`,
+          type: 'CONTRIBUTION_SUBMITTED',
+        }).catch((err) => logger.error('createNotification admin failed', err))
+      )
+    );
+
+    return res.json({ message: 'Payment submitted, awaiting admin confirmation' });
   } catch (err) {
     next(err);
   }

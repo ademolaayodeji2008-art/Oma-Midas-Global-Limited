@@ -46,7 +46,7 @@ async function main() {
   const settings = [
     {
       key: 'fee_percentage',
-      value: '30',
+      value: '10',
     },
     {
       key: 'loan_multiplier',
@@ -67,6 +67,18 @@ async function main() {
     {
       key: 'deduction_return_rate',
       value: '10',
+    },
+    {
+      key: 'coop_bank_name',
+      value: 'First Bank of Nigeria',
+    },
+    {
+      key: 'coop_account_number',
+      value: '0000000000',
+    },
+    {
+      key: 'coop_account_name',
+      value: 'Oma Midas Global Limited',
     },
     {
       key: 'terms_and_conditions',

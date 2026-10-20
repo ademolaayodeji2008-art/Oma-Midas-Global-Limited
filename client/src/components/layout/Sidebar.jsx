@@ -25,6 +25,7 @@ import {
   Settings,
   LogOut,
   WalletCards,
+  ClipboardCheck,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import Button from '../ui/Button';
@@ -44,15 +45,16 @@ const memberLinks = [
 ];
 
 const adminLinks = [
-  { to: '/admin/dashboard',    label: 'Dashboard',    Icon: LayoutDashboard },
-  { to: '/admin/members',      label: 'Members',      Icon: Users },
-  { to: '/admin/loans',        label: 'Loans',        Icon: Briefcase },
-  { to: '/admin/loan-summary', label: 'Loan Summary', Icon: BarChart2 },
-  { to: '/admin/refunds',      label: 'Refunds',      Icon: RotateCcw },
-  { to: '/admin/company-fund', label: 'Company Fund', Icon: Building2 },
-  { to: '/admin/reports',      label: 'Reports',      Icon: FileText },
-  { to: '/admin/audit-log',    label: 'Audit Log',    Icon: BookOpen },
-  { to: '/admin/settings',     label: 'Settings',     Icon: Settings },
+  { to: '/admin/dashboard',         label: 'Dashboard',        Icon: LayoutDashboard },
+  { to: '/admin/members',           label: 'Members',          Icon: Users },
+  { to: '/admin/pending-payments',  label: 'Pending Payments', Icon: ClipboardCheck },
+  { to: '/admin/loans',             label: 'Loans',            Icon: Briefcase },
+  { to: '/admin/loan-summary',      label: 'Loan Summary',     Icon: BarChart2 },
+  { to: '/admin/refunds',           label: 'Refunds',          Icon: RotateCcw },
+  { to: '/admin/company-fund',      label: 'Company Fund',     Icon: Building2 },
+  { to: '/admin/reports',           label: 'Reports',          Icon: FileText },
+  { to: '/admin/audit-log',         label: 'Audit Log',        Icon: BookOpen },
+  { to: '/admin/settings',          label: 'Settings',         Icon: Settings },
 ];
 
 const prefersReducedMotion =
@@ -94,7 +96,7 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }) {
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className="flex items-center gap-2 px-4 py-5 border-b border-[#2D1B69]/40">
-        <img src="/logo.svg" alt="Oma Midas logo" className="h-8 w-8" />
+        <img src="/logo.jpeg" alt="Oma Midas logo" className="h-8 w-8" />
         <span className="font-heading font-bold text-[#C9A86A] text-lg">Oma Midas</span>
       </div>
 

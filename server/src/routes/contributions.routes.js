@@ -7,7 +7,8 @@ import { authenticate } from '../middleware/auth.middleware.js';
 import {
   getMyContributions,
   getContributionStatus,
-  initializePayment,
+  getBankDetails,
+  submitPayment,
   getConsistentStreak,
   getMonthlyAmount,
 } from '../controllers/contributions.controller.js';
@@ -16,7 +17,8 @@ const router = Router();
 
 router.get('/', authenticate, getMyContributions);
 router.get('/status', authenticate, getContributionStatus);
-router.post('/initialize-payment', authenticate, initializePayment);
+router.get('/bank-details', authenticate, getBankDetails);
+router.post('/submit-payment', authenticate, submitPayment);
 router.get('/streak', authenticate, getConsistentStreak);
 router.get('/monthly-amount', authenticate, getMonthlyAmount);
 

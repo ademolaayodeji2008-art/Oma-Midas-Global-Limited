@@ -28,6 +28,10 @@ import {
   getSetting,
   updateSetting,
   startNewCycle,
+  getLoanSummary,
+  getPendingContributions,
+  approveContribution,
+  rejectContribution,
 } from '../controllers/admin.controller.js';
 
 const router = Router();
@@ -48,6 +52,7 @@ router.delete('/members/:id', deactivateMember);
 
 // Loan management
 router.get('/loans', getLoanRequests);
+router.get('/loans/summary', getLoanSummary);
 router.put('/loans/:id/approve', approveLoan);
 router.put('/loans/:id/reject', rejectLoan);
 
@@ -73,5 +78,10 @@ router.put('/settings/:key', updateSetting);
 
 // Cycles
 router.post('/cycles/new', startNewCycle);
+
+// Contribution management (manual bank transfer flow)
+router.get('/contributions/pending', getPendingContributions);
+router.put('/contributions/:id/approve', approveContribution);
+router.put('/contributions/:id/reject', rejectContribution);
 
 export default router;

@@ -17,6 +17,8 @@ import {
   sendLoanApprovalEmail,
   sendLoanRejectionEmail,
   sendRefundApprovalEmail,
+  sendContributionConfirmedEmail,
+  sendContributionRejectedEmail,
 } from '../services/email.service.js';
 import { createNotification } from '../services/notification.service.js';
 import logger from '../utils/logger.js';
@@ -48,11 +50,14 @@ export async function getDashboardStats(req, res, next) {
       pendingLoans,
       activeLoans,
       pendingRefunds,
+      contributionsPending,
       totalContributionsResult,
       totalRepaymentsResult,
       companyFundBalance,
       paystackBalance,
       activeCycle,
+      monthlyContributions,
+      loanStatuses,
     ] = await Promise.all([
       prisma.user.count({ where: { role: 'MEMBER', deletedAt: null } }),
       prisma.user.count({ where: { status: 'PENDING', deletedAt: null } }),
@@ -60,22 +65,45 @@ export async function getDashboardStats(req, res, next) {
       prisma.loan.count({ where: { status: 'PENDING' } }),
       prisma.loan.count({ where: { status: { in: ['APPROVED', 'DISBURSED', 'REPAYING'] } } }),
       prisma.refund.count({ where: { status: 'PENDING' } }),
+      prisma.contribution.count({ where: { status: 'PENDING_CONFIRMATION' } }),
       prisma.contribution.aggregate({ where: { status: 'PAID' }, _sum: { amountKobo: true } }),
       prisma.loanInstallment.aggregate({ where: { status: 'PAID' }, _sum: { amountKobo: true } }),
       getCurrentBalance('COMPANY_FUND'),
       paystackGetBalance().catch(() => ({ balance: 0, currency: 'NGN' })),
       prisma.cycle.findFirst({ where: { isActive: true } }),
+      // Monthly contributions grouped by month
+      prisma.contribution.groupBy({
+        by: ['month', 'year'],
+        where: { status: 'PAID' },
+        _sum: { amountKobo: true },
+        orderBy: [{ year: 'asc' }, { month: 'asc' }],
+      }),
+      // Loan counts by status
+      prisma.loan.groupBy({
+        by: ['status'],
+        _count: { id: true },
+      }),
     ]);
 
     return res.json({
       members: { total: totalMembers, pending: pendingMembers, active: activeMembers },
       loans: { pending: pendingLoans, active: activeLoans },
       refunds: { pending: pendingRefunds },
+      contributions: { pending: contributionsPending },
       totalContributionsKobo: totalContributionsResult._sum.amountKobo ?? 0,
       totalRepaymentsKobo: totalRepaymentsResult._sum.amountKobo ?? 0,
       companyFundBalanceKobo: companyFundBalance,
       paystackBalanceKobo: paystackBalance.balance,
       activeCycle,
+      monthlyContributions: monthlyContributions.map((m) => ({
+        month: m.month,
+        year: m.year,
+        totalKobo: m._sum.amountKobo ?? 0,
+      })),
+      loansByStatus: loanStatuses.reduce((acc, l) => {
+        acc[l.status] = l._count.id;
+        return acc;
+      }, {}),
     });
   } catch (err) {
     next(err);
@@ -798,6 +826,293 @@ export async function getCycleInfo(req, res, next) {
     const cycle = await prisma.cycle.findFirst({ where: { isActive: true } });
     if (!cycle) return res.status(404).json({ error: 'No active cycle' });
     return res.json({ cycle });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// getLoanSummary — per-member loan breakdown
+// ---------------------------------------------------------------------------
+export async function getLoanSummary(req, res, next) {
+  try {
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = 20;
+    const skip = (page - 1) * limit;
+    const search = req.query.search?.trim() || '';
+
+    // Get all members who have at least one loan
+    const whereUser = {
+      deletedAt: null,
+      role: 'MEMBER',
+      ...(search
+        ? {
+            OR: [
+              { fullName: { contains: search, mode: 'insensitive' } },
+              { email: { contains: search, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
+    };
+
+    const [members, totalCount] = await Promise.all([
+      prisma.user.findMany({
+        where: whereUser,
+        skip,
+        take: limit,
+        orderBy: { fullName: 'asc' },
+        include: {
+          loans: {
+            select: {
+              id: true,
+              requestedAmountKobo: true,
+              disbursedAmountKobo: true,
+              totalRepayableKobo: true,
+              status: true,
+              installments: {
+                select: { amountKobo: true, status: true },
+              },
+            },
+          },
+        },
+      }),
+      prisma.user.count({ where: whereUser }),
+    ]);
+
+    // Build per-member summary
+    const rows = members.map((member) => {
+      let totalCollectedKobo = 0;
+      let totalRepaidKobo = 0;
+      let activeLoanStatus = null;
+
+      for (const loan of member.loans) {
+        // Only count disbursed/repaying/completed loans as "collected"
+        if (['DISBURSED', 'REPAYING', 'COMPLETED'].includes(loan.status)) {
+          totalCollectedKobo += loan.disbursedAmountKobo;
+        }
+        // Repaid = sum of PAID installments
+        for (const inst of loan.installments) {
+          if (inst.status === 'PAID') {
+            totalRepaidKobo += inst.amountKobo;
+          }
+        }
+        // Track active loan status (DISBURSED or REPAYING)
+        if (['APPROVED', 'DISBURSED', 'REPAYING'].includes(loan.status)) {
+          activeLoanStatus = loan.status;
+        }
+      }
+
+      // Outstanding = total repayable of active loans minus what's been repaid on those loans
+      let outstandingKobo = 0;
+      for (const loan of member.loans) {
+        if (['DISBURSED', 'REPAYING'].includes(loan.status)) {
+          const repaidOnLoan = loan.installments
+            .filter((i) => i.status === 'PAID')
+            .reduce((s, i) => s + i.amountKobo, 0);
+          outstandingKobo += loan.totalRepayableKobo - repaidOnLoan;
+        }
+      }
+
+      return {
+        userId: member.id,
+        fullName: member.fullName,
+        email: member.email,
+        activeLoanStatus,
+        totalCollectedKobo,
+        totalRepaidKobo,
+        outstandingKobo: Math.max(0, outstandingKobo),
+      };
+    });
+
+    // Aggregate totals across all matching members (not just this page)
+    const allLoans = await prisma.loan.findMany({
+      where: {
+        user: whereUser,
+        status: { in: ['DISBURSED', 'REPAYING', 'COMPLETED'] },
+      },
+      include: { installments: { select: { amountKobo: true, status: true } } },
+    });
+
+    let totalCollected = 0;
+    let totalRepaid = 0;
+    let totalOutstanding = 0;
+
+    for (const loan of allLoans) {
+      totalCollected += loan.disbursedAmountKobo;
+      const repaidOnLoan = loan.installments
+        .filter((i) => i.status === 'PAID')
+        .reduce((s, i) => s + i.amountKobo, 0);
+      totalRepaid += repaidOnLoan;
+      if (['DISBURSED', 'REPAYING'].includes(loan.status)) {
+        totalOutstanding += Math.max(0, loan.totalRepayableKobo - repaidOnLoan);
+      }
+    }
+
+    return res.json({
+      rows,
+      total: totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      page,
+      totals: {
+        collected: totalCollected,
+        repaid: totalRepaid,
+        balance: totalOutstanding,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// getPendingContributions — admin: list all PENDING_CONFIRMATION contributions
+// ---------------------------------------------------------------------------
+export async function getPendingContributions(req, res, next) {
+  try {
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
+    const skip = (page - 1) * limit;
+
+    const [contributions, total] = await Promise.all([
+      prisma.contribution.findMany({
+        where: { status: 'PENDING_CONFIRMATION' },
+        include: {
+          user: { select: { id: true, fullName: true, email: true, phone: true } },
+          cycle: { select: { id: true, startDate: true, endDate: true } },
+        },
+        orderBy: { submittedAt: 'asc' },
+        skip,
+        take: limit,
+      }),
+      prisma.contribution.count({ where: { status: 'PENDING_CONFIRMATION' } }),
+    ]);
+
+    return res.json({
+      contributions,
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// approveContribution — admin: confirm contribution payment
+// ---------------------------------------------------------------------------
+export async function approveContribution(req, res, next) {
+  try {
+    const { id } = req.params;
+
+    const contribution = await prisma.contribution.findUnique({
+      where: { id },
+      include: { user: true },
+    });
+
+    if (!contribution) return res.status(404).json({ error: 'Contribution not found' });
+    if (contribution.status !== 'PENDING_CONFIRMATION') {
+      return res.status(400).json({ error: `Contribution is not pending confirmation (status: ${contribution.status})` });
+    }
+
+    const now = new Date();
+    const amountKobo = contribution.amountSubmittedKobo || contribution.amountKobo;
+
+    await prisma.$transaction(async (tx) => {
+      await tx.contribution.update({
+        where: { id },
+        data: { status: 'PAID', amountKobo, paidAt: now },
+      });
+
+      // Dynamic import to avoid circular deps
+      const { appendLedgerEntry } = await import('../services/ledger.service.js');
+      const reference = `contribution-${id}-${Date.now()}`;
+
+      await appendLedgerEntry(tx, {
+        type: 'CONTRIBUTION',
+        ledger: 'SAVINGS',
+        userId: contribution.userId,
+        amountKobo,
+        reference,
+      });
+    });
+
+    const monthName = new Date(contribution.year, contribution.month - 1).toLocaleString('en-NG', { month: 'long' });
+    const amountNaira = (amountKobo / 100).toLocaleString('en-NG');
+
+    await createNotification(prisma, {
+      userId: contribution.userId,
+      title: 'Contribution Confirmed',
+      message: `Your contribution of ₦${amountNaira} for ${monthName} ${contribution.year} has been confirmed.`,
+      type: 'CONTRIBUTION_CONFIRMED',
+    }).catch((err) => logger.error('createNotification failed', err));
+
+    sendContributionConfirmedEmail(contribution.user, {
+      month: contribution.month,
+      year: contribution.year,
+      amountKobo,
+    }).catch((err) => logger.error('sendContributionConfirmedEmail failed', err));
+
+    await logAudit(req.user.id, 'APPROVE_CONTRIBUTION', 'Contribution', id, {
+      amountKobo,
+      month: contribution.month,
+      year: contribution.year,
+    });
+
+    return res.json({ message: 'Contribution approved' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// rejectContribution — admin: reject a submitted contribution payment
+// ---------------------------------------------------------------------------
+export async function rejectContribution(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+
+    const contribution = await prisma.contribution.findUnique({
+      where: { id },
+      include: { user: true },
+    });
+
+    if (!contribution) return res.status(404).json({ error: 'Contribution not found' });
+    if (contribution.status !== 'PENDING_CONFIRMATION') {
+      return res.status(400).json({ error: `Contribution is not pending confirmation (status: ${contribution.status})` });
+    }
+
+    await prisma.contribution.update({
+      where: { id },
+      data: {
+        status: 'PENDING',
+        rejectionReason: reason || null,
+        amountSubmittedKobo: null,
+        submittedAt: null,
+      },
+    });
+
+    const monthName = new Date(contribution.year, contribution.month - 1).toLocaleString('en-NG', { month: 'long' });
+
+    await createNotification(prisma, {
+      userId: contribution.userId,
+      title: 'Contribution Payment Not Confirmed',
+      message: `Your contribution payment for ${monthName} ${contribution.year} was not confirmed. Reason: ${reason || 'Not specified'}`,
+      type: 'CONTRIBUTION_REJECTED',
+    }).catch((err) => logger.error('createNotification failed', err));
+
+    sendContributionRejectedEmail(contribution.user, {
+      month: contribution.month,
+      year: contribution.year,
+      reason,
+    }).catch((err) => logger.error('sendContributionRejectedEmail failed', err));
+
+    await logAudit(req.user.id, 'REJECT_CONTRIBUTION', 'Contribution', id, {
+      reason,
+      month: contribution.month,
+      year: contribution.year,
+    });
+
+    return res.json({ message: 'Contribution rejected' });
   } catch (err) {
     next(err);
   }

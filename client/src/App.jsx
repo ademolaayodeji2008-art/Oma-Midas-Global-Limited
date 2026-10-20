@@ -40,6 +40,7 @@ import Reports from './pages/admin/Reports';
 import AuditLog from './pages/admin/AuditLog';
 import Settings from './pages/admin/Settings';
 import MemberClearanceCard from './pages/admin/MemberClearanceCard';
+import PendingPayments from './pages/admin/PendingPayments';
 
 /** Loading spinner shown while auth is being resolved. */
 function LoadingScreen() {
@@ -120,6 +121,7 @@ function AnimatedRoutes() {
         <Route path="/admin/audit-log" element={<ProtectedRoute requiredRole="ADMIN"><AuditLog /></ProtectedRoute>} />
         <Route path="/admin/settings" element={<ProtectedRoute requiredRole="ADMIN"><Settings /></ProtectedRoute>} />
         <Route path="/admin/members/:id/clearance-card" element={<ProtectedRoute requiredRole="ADMIN"><MemberClearanceCard /></ProtectedRoute>} />
+        <Route path="/admin/pending-payments" element={<ProtectedRoute requiredRole="ADMIN"><PendingPayments /></ProtectedRoute>} />
 
         {/* Catch-all */}
         <Route path="*" element={<Navigate to="/" replace />} />
