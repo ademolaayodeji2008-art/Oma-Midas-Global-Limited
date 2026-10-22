@@ -50,7 +50,7 @@ async function main() {
     },
     {
       key: 'loan_multiplier',
-      value: '3',
+      value: '2',
     },
     {
       key: 'min_consecutive_months',
@@ -82,12 +82,63 @@ async function main() {
     },
     {
       key: 'terms_and_conditions',
-      value: `<p>Terms and conditions for Oma Midas Global Limited cooperative membership.</p>
-<p>By registering as a member, you agree to contribute a fixed monthly amount to the cooperative savings pool. Your contributions form the basis of your eligibility for cooperative loans.</p>
-<p>Loans are subject to approval by the cooperative administrator. A service fee is deducted from the approved loan amount before disbursement. The full approved amount (before the fee) is repayable in equal monthly installments over the agreed repayment period.</p>
-<p>Members must maintain their contributions for a minimum number of consecutive months before becoming eligible to request a loan. The cooperative reserves the right to amend these terms with reasonable notice to all members.</p>
-<p>Refunds of savings contributions may be requested at the end of a cooperative cycle, subject to any outstanding loan obligations. All financial transactions are processed through Paystack and are subject to their terms of service.</p>
-<p>Oma Midas Global Limited is committed to the financial wellbeing of its members and operates with full transparency. For queries, contact the cooperative administrator.</p>`,
+      value: `<h2>Welcome to OMA MIDAS Savings Program</h2>
+<p>We're excited to have you on board! This program aims to promote financial discipline, savings, and responsible lending partnership.</p>
+
+<h3>Membership Requirements</h3>
+<ol>
+<li>Membership is open to individuals with a high level of integrity and financial competence with a legitimate source of income.</li>
+<li>Registration is free and the program aims to support you in achieving your goals.</li>
+</ol>
+
+<h3>Savings Requirements</h3>
+<ol>
+<li><strong>Monthly savings:</strong> This is the minimum amount filled out in your registration form.</li>
+<li>Payments can be made between the 1st and last day of every month.</li>
+</ol>
+
+<h3>Loan Requests</h3>
+<ol>
+<li>Loan requests must be submitted and approved before the 25th of every month.</li>
+<li>Disbursement of approved loans occurs on the last day of every month.</li>
+</ol>
+
+<h3>Additional Rules</h3>
+<ol>
+<li><strong>Interest rate:</strong> 10% of loaned funds on all loans.</li>
+<li><strong>Loan repayment term:</strong> All loans must be returned before the end of the savings cycle (September 30). Repayments are distributed across the remaining months of the cycle.</li>
+<li><strong>Default penalty:</strong> Your guarantor may risk forfeiting their savings. Other members' savings cannot be placed at risk.</li>
+<li><strong>Maximum loan amount:</strong> Two (2) times your total saved amount, or the total capacity of your guarantor.</li>
+<li>Members are advised to attend at least one virtual financial literacy seminar during the savings cycle.</li>
+</ol>
+
+<h3>Benefits</h3>
+<ol>
+<li>Fair interest rates on savings.</li>
+<li>Access to affordable loans.</li>
+<li>Financial literacy resources.</li>
+<li>Community support.</li>
+<li>Dividends at the end of the financial cycle.</li>
+<li>Financial literacy empowerment.</li>
+</ol>
+
+<h3>Termination</h3>
+<ol>
+<li>Failure to make monthly savings for 2 consecutive months will result in a red flag on your account.</li>
+<li>Integrity is key. Defaulting on payments affects your eligibility for future cycles and disqualifies you from being a guarantor.</li>
+<li>Defaulting on loan repayment is taken seriously. Adequate measures are in place to recover funds where necessary.</li>
+</ol>
+
+<h3>Commitment</h3>
+<p>By joining this platform, you commit to adhering to these rules and guidelines.</p>
+
+<h3>Contact Us</h3>
+<p>For inquiries, support or concerns:</p>
+<p><strong>Email:</strong> omamidasgloballtd@gmail.com<br/>
+<strong>WhatsApp:</strong> +2347016694445</p>
+
+<p>Thank you for choosing Oma Midas Savings platform!<br/>
+<em>Best regards,<br/>Ajiboye O.M<br/>OMA Midas Savings Program Secretary</em></p>`,
     },
   ];
 

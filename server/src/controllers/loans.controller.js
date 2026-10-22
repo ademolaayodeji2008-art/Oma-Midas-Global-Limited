@@ -6,7 +6,6 @@ import { PrismaClient } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
 import { initializeTransaction } from '../services/paystack.service.js';
 import { calculateLoanBreakdown } from '../utils/kobo.js';
-import { getContributionPeriod } from '../utils/cycleHelpers.js';
 import logger from '../utils/logger.js';
 
 const prisma = new PrismaClient();
@@ -86,20 +85,13 @@ export async function checkEligibility(req, res, next) {
 
     const minMonths = await getSettingInt('min_consecutive_months', 3);
     const loanMultiplier = await getSettingInt('loan_multiplier', 3);
-    const feePercentage = await getSettingInt('fee_percentage', 30);
+    const feePercentage = await getSettingInt('fee_percentage', 10);
 
-    // 3. Consecutive months check (EXISTING members skip the wait in first 3 months)
+    // 3. Consecutive months check — EXISTING members skip the wait entirely
     const consecutiveMonths = await countConsecutivePaidMonths(userId, cycle.id);
-    const { month: currentMonth, year: currentYear } = getContributionPeriod();
-    const cycleStartMonth = new Date(cycle.startDate).getMonth() + 1;
-    const cycleStartYear = new Date(cycle.startDate).getFullYear();
-    const monthsIntoCycle =
-      (currentYear - cycleStartYear) * 12 + (currentMonth - cycleStartMonth) + 1;
+    const isExistingMember = req.user.memberType === 'EXISTING';
 
-    const isExistingMemberInFirstMonths =
-      req.user.memberType === 'EXISTING' && monthsIntoCycle <= 3;
-
-    if (!isExistingMemberInFirstMonths && consecutiveMonths < minMonths) {
+    if (!isExistingMember && consecutiveMonths < minMonths) {
       reasons.push(
         `You need at least ${minMonths} consecutive paid months (you have ${consecutiveMonths})`
       );
@@ -137,6 +129,14 @@ export async function checkEligibility(req, res, next) {
 // ---------------------------------------------------------------------------
 export async function requestLoan(req, res, next) {
   try {
+    // Loan request deadline: must be submitted before the 25th of each month
+    const today = new Date();
+    if (today.getDate() > 25) {
+      return res.status(400).json({
+        message: 'Loan requests must be submitted before the 25th of each month. Please try again next month.',
+      });
+    }
+
     const { requestedAmountKobo, repaymentMonths, installmentSchedule } = req.body;
     const userId = req.user.id;
 
@@ -161,7 +161,7 @@ export async function requestLoan(req, res, next) {
       return res.status(403).json({ error: 'Account must be active to request a loan' });
     }
 
-    const feePercentage = await getSettingInt('fee_percentage', 30);
+    const feePercentage = await getSettingInt('fee_percentage', 10);
     const loanMultiplier = await getSettingInt('loan_multiplier', 3);
     const breakdown = calculateLoanBreakdown(requestedAmountKobo, feePercentage);
 
@@ -185,7 +185,7 @@ export async function requestLoan(req, res, next) {
       }
     }
 
-    // Max loan = 3× savings
+    // Max loan = 2× savings
     const userSavings = await getUserSavingsInCycle(userId, cycle.id);
     const maxLoanKobo = userSavings * loanMultiplier;
     if (requestedAmountKobo > maxLoanKobo) {
@@ -308,6 +308,73 @@ export async function initializeLoanRepayment(req, res, next) {
     });
 
     return res.json({ authorization_url: paystackData.authorization_url, reference });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// getMyLoanSummary — member's own loan summary
+// ---------------------------------------------------------------------------
+export async function getMyLoanSummary(req, res, next) {
+  try {
+    const userId = req.user.id;
+
+    const loans = await prisma.loan.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        cycle: { select: { startDate: true, endDate: true } },
+        installments: { select: { amountKobo: true, status: true, dueDate: true } },
+      },
+    });
+
+    let totalCollectedKobo = 0;
+    let totalRepaidKobo = 0;
+    let outstandingKobo = 0;
+    let activeLoanStatus = null;
+
+    const loanRows = loans.map((loan) => {
+      const repaidOnLoan = loan.installments
+        .filter((i) => i.status === 'PAID')
+        .reduce((s, i) => s + i.amountKobo, 0);
+
+      if (['DISBURSED', 'REPAYING', 'COMPLETED'].includes(loan.status)) {
+        totalCollectedKobo += loan.disbursedAmountKobo;
+      }
+      totalRepaidKobo += repaidOnLoan;
+
+      if (['DISBURSED', 'REPAYING'].includes(loan.status)) {
+        const remaining = Math.max(0, loan.totalRepayableKobo - repaidOnLoan);
+        outstandingKobo += remaining;
+        activeLoanStatus = loan.status;
+      }
+
+      return {
+        id: loan.id,
+        status: loan.status,
+        requestedAmountKobo: loan.requestedAmountKobo,
+        disbursedAmountKobo: loan.disbursedAmountKobo,
+        totalRepayableKobo: loan.totalRepayableKobo,
+        repaidKobo: repaidOnLoan,
+        outstandingKobo: ['DISBURSED', 'REPAYING'].includes(loan.status)
+          ? Math.max(0, loan.totalRepayableKobo - repaidOnLoan)
+          : 0,
+        cycleStart: loan.cycle?.startDate,
+        cycleEnd: loan.cycle?.endDate,
+        createdAt: loan.createdAt,
+      };
+    });
+
+    return res.json({
+      loans: loanRows,
+      summary: {
+        totalCollectedKobo,
+        totalRepaidKobo,
+        outstandingKobo,
+        activeLoanStatus,
+      },
+    });
   } catch (err) {
     next(err);
   }

@@ -15,7 +15,7 @@ export default function Footer() {
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           {/* Logo + tagline */}
           <div className="flex items-center gap-3">
-            <img src="/logo.svg" alt="Oma Midas logo" className="h-10 w-10" />
+            <img src="/logo.jpeg" alt="Oma Midas logo" className="h-10 w-10" />
             <div>
               <p className="font-heading font-bold text-lg text-white">Oma Midas Global</p>
               <p className="text-xs text-white/60">Your Trusted Savings & Loan Cooperative</p>
@@ -31,7 +31,9 @@ export default function Footer() {
 
           {/* Contact */}
           <div className="text-sm text-white/60 text-center md:text-right">
-            <p>Contact: <a href="mailto:info@omamidas.com" className="text-accent hover:underline">info@omamidas.com</a></p>
+            <p>Email: <a href="mailto:omamidasgloballtd@gmail.com" className="text-accent hover:underline">omamidasgloballtd@gmail.com</a></p>
+            <p>WhatsApp: <a href="https://wa.me/2347016694445" className="text-accent hover:underline">+2347016694445</a></p>
+            <p className="mt-1">Secretary: Ajiboye O.M</p>
           </div>
         </div>
 

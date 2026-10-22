@@ -52,11 +52,13 @@ const benefits = [
 
 const faqs = [
   { q: 'How do savings cycles work?', a: 'Each cycle runs for a fixed period set by the cooperative. Contributions are due monthly. Your record within the cycle determines your loan eligibility.' },
-  { q: 'When am I eligible for a loan?', a: 'You must have made a minimum number of consecutive contributions (set by the admin, typically 3+ months) to be eligible.' },
-  { q: 'How much can I borrow?', a: 'Your maximum loan amount is based on your total savings multiplied by the cooperative multiplier (e.g. 2×). Exact figures are shown on the Loan Request page.' },
-  { q: 'How does repayment work?', a: 'You create a custom repayment schedule when applying. Payments are made via Paystack and tracked against your installment plan.' },
-  { q: 'What is the company fee?', a: 'The cooperative charges a flat fee (default 30%) on the loan amount. This fee is deducted from the disbursement, so you receive 70% of what you requested.' },
+  { q: 'When am I eligible for a loan?', a: 'You must have made a minimum number of consecutive contributions (set by the admin) to be eligible.' },
+  { q: 'How much can I borrow?', a: 'Your maximum loan is 2\u00d7 your total saved amount in the current cycle. Loan requests must be submitted before the 25th of each month.' },
+  { q: 'How does repayment work?', a: 'You create a repayment schedule when applying. All loans must be fully repaid before September 30 of the current cycle.' },
+  { q: 'What is the company fee?', a: 'A 10% interest rate applies on all loans. You receive 90% of the requested amount and repay 100%.' },
   { q: 'Can I get a refund of my savings?', a: 'Yes. If you have no outstanding loan, you can request a refund of your savings balance at the end of a cycle. Refunds are subject to admin approval.' },
+  { q: 'When are loans disbursed?', a: 'Approved loans are disbursed on the last day of each month.' },
+  { q: 'What happens if I miss payments?', a: 'Missing 2 consecutive monthly payments results in a red flag on your account and may affect your eligibility for loans and future cycles.' },
 ];
 
 function FaqItem({ q, a }) {
@@ -192,9 +194,12 @@ export default function Landing() {
       {/* ── Loan Calculator ──────────────────────────────── */}
       <section className="py-20 px-6 bg-background">
         <FadeUpSection className="max-w-2xl mx-auto">
-          <h2 className="font-heading text-3xl font-bold text-primary text-center mb-8">
+          <h2 className="font-heading text-3xl font-bold text-primary text-center mb-3">
             See Your Loan Breakdown
           </h2>
+          <p className="text-center text-sm text-gray-500 mb-8">
+            Your maximum loan is 2&times; your total saved amount. A 10% fee applies &mdash; you receive 90% of the requested amount and repay 100%.
+          </p>
           <LoanCalculator />
         </FadeUpSection>
       </section>
