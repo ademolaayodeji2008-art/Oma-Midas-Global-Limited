@@ -411,11 +411,11 @@ export async function sendRefundApprovalEmail(user, refund) {
     heading('Your Refund Has Been Approved!') +
       paragraph(`Dear <strong>${user.fullName}</strong>,`) +
       paragraph(
-        'Your refund request has been approved and the transfer has been initiated to your registered bank account.'
+        'Your refund request has been approved. The cooperative administrator will manually transfer the funds to your registered bank account shortly.'
       ) +
       infoBox([['Refund Amount', `₦${amountNaira}`]]) +
       paragraph(
-        'Please allow 1–3 business days for the funds to reflect in your bank account.'
+        'You will receive another notification once the transfer has been completed. If you have any questions, please contact the cooperative administrator.'
       )
   );
   await send(user.email, 'Refund approved — Oma Midas', html);

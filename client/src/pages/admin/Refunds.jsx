@@ -43,7 +43,7 @@ export default function Refunds() {
       toast({ message: 'Refund approved.', type: 'success' });
       fetchData();
     } catch (err) {
-      toast({ message: err.response?.data?.message || 'Approval failed.', type: 'error' });
+      toast({ message: err.response?.data?.error || err.response?.data?.message || 'Approval failed.', type: 'error' });
     } finally {
       setApproving(null);
     }
