@@ -13,7 +13,7 @@ import PageTransition from '../../components/layout/PageTransition';
 import api from '../../lib/api';
 import { useToast } from '../../components/ui/Toast';
 
-const statusVariant = { PENDING: 'neutral', APPROVED: 'success', REJECTED: 'error' };
+const statusVariant = { PENDING: 'neutral', APPROVED: 'success', REJECTED: 'error', TRANSFERRED: 'info' };
 
 export default function Refunds() {
   const { toast } = useToast();
@@ -23,6 +23,7 @@ export default function Refunds() {
   const [rejectReason, setRejectReason] = useState('');
   const [rejecting, setRejecting] = useState(false);
   const [approving, setApproving] = useState(null);
+  const [transferring, setTransferring] = useState(null);
 
   const fetchData = useCallback(() => {
     setLoading(true);
@@ -48,6 +49,20 @@ export default function Refunds() {
     }
   };
 
+  const handleMarkTransferred = async (refund) => {
+    if (!confirm(`Mark ₦${(refund.amountKobo / 100).toLocaleString()} refund for ${refund.user?.fullName} as transferred?`)) return;
+    setTransferring(refund.id);
+    try {
+      await api.put(`/api/admin/refunds/${refund.id}/transferred`);
+      toast({ message: 'Refund marked as transferred.', type: 'success' });
+      fetchData();
+    } catch (err) {
+      toast({ message: err.response?.data?.error || 'Failed to mark as transferred.', type: 'error' });
+    } finally {
+      setTransferring(null);
+    }
+  };
+
   const handleReject = async () => {
     if (!rejectReason.trim()) { toast({ message: 'Enter a reason.', type: 'warning' }); return; }
     setRejecting(true);
@@ -70,13 +85,24 @@ export default function Refunds() {
     { key: 'status', label: 'Status', render: (v) => <Badge variant={statusVariant[v] || 'neutral'}>{v}</Badge> },
     { key: 'createdAt', label: 'Requested', render: (v) => v ? new Date(v).toLocaleDateString() : '—' },
     {
-      key: 'actions', label: '', render: (_, row) =>
-        row.status === 'PENDING' ? (
-          <div className="flex gap-2">
-            <Button variant="primary" size="sm" loading={approving === row.id} onClick={() => handleApprove(row)}>Approve</Button>
-            <Button variant="danger" size="sm" onClick={() => setRejectModal(row)}>Reject</Button>
-          </div>
-        ) : null,
+      key: 'actions', label: '', render: (_, row) => {
+        if (row.status === 'PENDING') {
+          return (
+            <div className="flex gap-2">
+              <Button variant="primary" size="sm" loading={approving === row.id} onClick={() => handleApprove(row)}>Approve</Button>
+              <Button variant="danger" size="sm" onClick={() => setRejectModal(row)}>Reject</Button>
+            </div>
+          );
+        }
+        if (row.status === 'APPROVED') {
+          return (
+            <Button variant="secondary" size="sm" loading={transferring === row.id} onClick={() => handleMarkTransferred(row)}>
+              Mark as Transferred
+            </Button>
+          );
+        }
+        return null;
+      },
     },
   ];
 
