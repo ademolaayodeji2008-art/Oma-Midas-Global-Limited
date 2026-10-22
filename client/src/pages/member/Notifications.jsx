@@ -26,7 +26,7 @@ export default function Notifications() {
     api.get('/api/notifications', { params: { page, limit } })
       .then((res) => {
         setNotifications(res.data.notifications || res.data || []);
-        setTotal(res.data.total || 0);
+        setTotal(res.data.pagination?.total || 0);
       })
       .catch(() => toast({ message: 'Failed to load notifications.', type: 'error' }))
       .finally(() => setLoading(false));
@@ -38,7 +38,7 @@ export default function Notifications() {
     const ids = notifications.filter((n) => !n.isRead).map((n) => n.id);
     if (!ids.length) return;
     try {
-      await api.post('/api/notifications/mark-read', { ids });
+      await api.put('/api/notifications/read', { ids });
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       toast({ message: 'All marked as read.', type: 'success' });
     } catch {

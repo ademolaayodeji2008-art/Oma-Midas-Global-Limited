@@ -23,7 +23,7 @@ export default function AuditLog() {
     api.get('/api/admin/audit-logs', { params: { page, limit: 25, action: actionFilter } })
       .then((res) => {
         setLogs(res.data.logs || res.data.data || []);
-        setTotal(res.data.total || 0);
+        setTotal(res.data.pagination?.total || 0);
       })
       .catch(() => {})
       .finally(() => setLoading(false));

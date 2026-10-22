@@ -118,7 +118,9 @@ export async function submitPayment(req, res, next) {
       return res.status(404).json({ error: 'No active cycle found' });
     }
 
-    const { month, year } = getContributionPeriod();
+    const currentPeriod = getContributionPeriod();
+    const month = req.body.month || currentPeriod.month;
+    const year = req.body.year || currentPeriod.year;
     const { amountKobo, paymentNote } = req.body;
 
     if (!amountKobo || typeof amountKobo !== 'number' || amountKobo <= 0) {

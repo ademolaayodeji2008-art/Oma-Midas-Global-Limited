@@ -80,7 +80,7 @@ export default function CompanyFund() {
                 <Card>
                   <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Company Fund Balance</p>
                   <p className="font-heading text-3xl font-bold text-primary">
-                    <AnimatedCounter value={Math.round((fund?.balanceKobo || 0) / 100)} prefix="₦" />
+                    <AnimatedCounter value={Math.round((fund?.ledgerBalanceKobo || 0) / 100)} prefix="₦" />
                   </p>
                 </Card>
                 <Card>

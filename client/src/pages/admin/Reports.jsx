@@ -24,7 +24,7 @@ export default function Reports() {
     api.get('/api/admin/transactions', { params: { page, limit: 25, ...filters } })
       .then((res) => {
         setTransactions(res.data.transactions || res.data.data || []);
-        setTotal(res.data.total || 0);
+        setTotal(res.data.pagination?.total || 0);
       })
       .catch(() => {})
       .finally(() => setLoading(false));

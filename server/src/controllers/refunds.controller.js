@@ -72,12 +72,18 @@ export async function requestRefund(req, res, next) {
 // ---------------------------------------------------------------------------
 export async function getMyRefunds(req, res, next) {
   try {
-    const refunds = await prisma.refund.findMany({
-      where: { userId: req.user.id },
-      orderBy: { createdAt: 'desc' },
-      include: { cycle: true },
-    });
-    return res.json({ refunds });
+    const [refunds, activeLoan] = await Promise.all([
+      prisma.refund.findMany({
+        where: { userId: req.user.id },
+        orderBy: { createdAt: 'desc' },
+        include: { cycle: true },
+      }),
+      prisma.loan.findFirst({
+        where: { userId: req.user.id, status: { in: ['DISBURSED', 'REPAYING'] } },
+        select: { id: true },
+      }),
+    ]);
+    return res.json({ refunds, hasActiveLoan: !!activeLoan });
   } catch (err) {
     next(err);
   }

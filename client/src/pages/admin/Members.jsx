@@ -66,7 +66,7 @@ export default function Members() {
     api.get('/api/admin/members', { params: { page: membersPage, search, limit: 20 } })
       .then((res) => {
         setMembers(res.data.members || res.data.data || []);
-        setMembersTotal(res.data.total || 0);
+        setMembersTotal(res.data.pagination?.total || 0);
       })
       .catch(() => {})
       .finally(() => setMembersLoading(false));

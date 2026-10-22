@@ -788,14 +788,21 @@ export async function rejectRefund(req, res, next) {
 // ---------------------------------------------------------------------------
 export async function getCompanyFundBalance(req, res, next) {
   try {
-    const [ledgerBalance, paystackBalance] = await Promise.all([
+    const [ledgerBalance, paystackBalance, ledgerEntries] = await Promise.all([
       getCurrentBalance('COMPANY_FUND'),
       paystackGetBalance().catch(() => ({ balance: 0 })),
+      prisma.ledgerEntry.findMany({
+        where: { ledger: 'COMPANY_FUND' },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+        include: { user: { select: { fullName: true, email: true } } },
+      }),
     ]);
 
     return res.json({
       ledgerBalanceKobo: ledgerBalance,
       paystackBalanceKobo: paystackBalance.balance,
+      ledger: ledgerEntries,
     });
   } catch (err) {
     next(err);

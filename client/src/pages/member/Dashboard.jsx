@@ -136,7 +136,7 @@ export default function MemberDashboard() {
                   {stats?.activeLoan ? (
                     <>
                       <p className="font-heading text-2xl font-bold text-error">
-                        <AnimatedCounter value={Math.round((stats.activeLoan.amountKobo || 0) / 100)} prefix="₦" />
+                        <AnimatedCounter value={Math.round((stats.activeLoan.requestedAmountKobo || 0) / 100)} prefix="₦" />
                       </p>
                       <Badge variant="warning" className="mt-2">{stats.activeLoan.status}</Badge>
                     </>

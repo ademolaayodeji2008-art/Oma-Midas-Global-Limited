@@ -47,8 +47,9 @@ export default function LoanRequest() {
     setSubmitting(true);
     try {
       await api.post('/api/loans', {
-        amountKobo: loanData.amountKobo,
-        repaymentSchedule: schedule,
+        requestedAmountKobo: loanData.amountKobo,
+        repaymentMonths: schedule.length,
+        installmentSchedule: schedule,
       });
       toast({ message: 'Loan request submitted successfully!', type: 'success' });
       navigate('/member/loan-repayment');
@@ -75,9 +76,9 @@ export default function LoanRequest() {
                 <span className="text-2xl" aria-hidden="true">✅</span>
                 <div>
                   <p className="font-semibold text-success">You are eligible for a loan!</p>
-                  {eligibility.maxAmountKobo && (
+                  {eligibility.meta?.maxLoanKobo && (
                     <p className="text-sm text-gray-500 mt-1">
-                      Maximum loan: <strong>₦{(eligibility.maxAmountKobo / 100).toLocaleString()}</strong>
+                      Maximum loan: <strong>₦{(eligibility.meta.maxLoanKobo / 100).toLocaleString()}</strong>
                     </p>
                   )}
                 </div>
@@ -102,7 +103,7 @@ export default function LoanRequest() {
               {/* Calculator */}
               <LoanCalculator
                 onChange={(data) => setLoanData(data)}
-                feePercentage={30}
+                feePercentage={10}
               />
 
               {/* Repayment plan */}

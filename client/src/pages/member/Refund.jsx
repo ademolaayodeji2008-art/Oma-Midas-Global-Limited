@@ -47,7 +47,7 @@ export default function Refund() {
     if (!data?.savingsKobo) return;
     setSubmitting(true);
     try {
-      await api.post('/api/refunds', { amountKobo: data.savingsKobo });
+      await api.post('/api/refunds', {});
       toast({ message: 'Refund request submitted!', type: 'success' });
       fetchData();
     } catch (err) {
