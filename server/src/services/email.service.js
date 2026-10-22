@@ -420,3 +420,60 @@ export async function sendRefundApprovalEmail(user, refund) {
   );
   await send(user.email, 'Refund approved — Oma Midas', html);
 }
+
+/**
+ * Send a loan disbursed notification email.
+ * @param {{fullName:string, email:string}} user
+ * @param {{disbursedAmountKobo:number, bankName:string, accountNumber:string}} details
+ */
+export async function sendLoanDisbursedEmail(user, { disbursedAmountKobo, bankName, accountNumber }) {
+  const amountNaira = (disbursedAmountKobo / 100).toLocaleString('en-NG', { minimumFractionDigits: 2 });
+  const html = htmlWrapper(
+    'Loan Disbursed',
+    heading('Your Loan Has Been Disbursed!') +
+      paragraph(`Dear <strong>${user.fullName}</strong>,`) +
+      paragraph(
+        'Great news! The admin has manually transferred your approved loan amount to your registered bank account.'
+      ) +
+      infoBox([
+        ['Amount Disbursed', `₦${amountNaira}`],
+        ['Bank', bankName || 'N/A'],
+        ['Account Number', accountNumber || 'N/A'],
+      ]) +
+      paragraph(
+        'Please check your bank account to confirm receipt of the funds. If you do not receive the funds within 1–3 business days, please contact the cooperative administrator.'
+      ) +
+      button(`${process.env.FRONTEND_URL || '#'}/member/loan-repayment`, 'View Repayment Schedule')
+  );
+  await send(user.email, 'Loan disbursed — Oma Midas', html);
+}
+
+/**
+ * Send a repayment confirmed notification email.
+ * @param {{fullName:string, email:string}} user
+ * @param {{amountKobo:number, dueDate:Date}} details
+ */
+export async function sendRepaymentConfirmedEmail(user, { amountKobo, dueDate }) {
+  const amountNaira = (amountKobo / 100).toLocaleString('en-NG', { minimumFractionDigits: 2 });
+  const dueDateFormatted = new Date(dueDate).toLocaleDateString('en-NG', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+  const html = htmlWrapper(
+    'Repayment Confirmed',
+    heading('Repayment Confirmed!') +
+      paragraph(`Dear <strong>${user.fullName}</strong>,`) +
+      paragraph(
+        'Your loan repayment has been verified and confirmed by the cooperative administrator.'
+      ) +
+      infoBox([
+        ['Amount', `₦${amountNaira}`],
+        ['Installment Due Date', dueDateFormatted],
+        ['Status', 'Confirmed'],
+      ]) +
+      paragraph('Thank you for keeping up with your loan repayments. Your account has been updated accordingly.') +
+      button(`${process.env.FRONTEND_URL || '#'}/member/loan-repayment`, 'View Repayment Schedule')
+  );
+  await send(user.email, 'Repayment confirmed — Oma Midas', html);
+}

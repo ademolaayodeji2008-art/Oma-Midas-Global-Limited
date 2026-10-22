@@ -51,6 +51,7 @@ enum LoanStatus {
 
 enum InstallmentStatus {
   PENDING
+  PENDING_CONFIRMATION
   PAID
   OVERDUE
 }
@@ -189,9 +190,11 @@ model LoanInstallment {
   dueDate     DateTime
   amountKobo  Int
   status      InstallmentStatus @default(PENDING)
-  paystackRef String?           @unique
-  paidAt      DateTime?
-  createdAt   DateTime          @default(now())
+  paystackRef     String?           @unique
+  paidAt          DateTime?
+  submittedAt     DateTime?
+  rejectionReason String?
+  createdAt       DateTime          @default(now())
 
   loan Loan @relation(fields: [loanId], references: [id])
 

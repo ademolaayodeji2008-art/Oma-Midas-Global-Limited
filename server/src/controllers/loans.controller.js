@@ -3,9 +3,8 @@
  */
 
 import { PrismaClient } from '@prisma/client';
-import { v4 as uuidv4 } from 'uuid';
-import { initializeTransaction } from '../services/paystack.service.js';
 import { calculateLoanBreakdown } from '../utils/kobo.js';
+import { createNotification } from '../services/notification.service.js';
 import logger from '../utils/logger.js';
 
 const prisma = new PrismaClient();
@@ -84,10 +83,8 @@ export async function checkEligibility(req, res, next) {
     }
 
     const minMonths = await getSettingInt('min_consecutive_months', 3);
-    const loanMultiplier = await getSettingInt('loan_multiplier', 3);
+    const loanMultiplier = await getSettingInt('loan_multiplier', 2);
     const feePercentage = await getSettingInt('fee_percentage', 10);
-
-    // 3. Consecutive months check — EXISTING members skip the wait entirely
     const consecutiveMonths = await countConsecutivePaidMonths(userId, cycle.id);
     const isExistingMember = req.user.memberType === 'EXISTING';
 
@@ -140,6 +137,14 @@ export async function requestLoan(req, res, next) {
     const { requestedAmountKobo, repaymentMonths, installmentSchedule } = req.body;
     const userId = req.user.id;
 
+    // Loan requests must be submitted before the 25th of each month
+    const todayDay = new Date().getDate();
+    if (todayDay >= 25) {
+      return res.status(400).json({
+        error: 'Loan requests must be submitted before the 25th of each month. Please try again next month.',
+      });
+    }
+
     if (!requestedAmountKobo || !repaymentMonths || !installmentSchedule) {
       return res.status(422).json({ error: 'requestedAmountKobo, repaymentMonths, and installmentSchedule are required' });
     }
@@ -161,8 +166,8 @@ export async function requestLoan(req, res, next) {
       return res.status(403).json({ error: 'Account must be active to request a loan' });
     }
 
+    const loanMultiplier = await getSettingInt('loan_multiplier', 2);
     const feePercentage = await getSettingInt('fee_percentage', 10);
-    const loanMultiplier = await getSettingInt('loan_multiplier', 3);
     const breakdown = calculateLoanBreakdown(requestedAmountKobo, feePercentage);
 
     // Validate installment schedule sums to totalRepayableKobo
@@ -261,9 +266,9 @@ export async function getMyCurrentLoan(req, res, next) {
 }
 
 // ---------------------------------------------------------------------------
-// initializeLoanRepayment
+// submitInstallmentPayment — member submits manual bank transfer for an installment
 // ---------------------------------------------------------------------------
-export async function initializeLoanRepayment(req, res, next) {
+export async function submitInstallmentPayment(req, res, next) {
   try {
     const { installmentId } = req.body;
 
@@ -285,29 +290,40 @@ export async function initializeLoanRepayment(req, res, next) {
     }
 
     if (installment.status === 'PAID') {
-      return res.status(400).json({ error: 'Installment has already been paid' });
+      return res.status(400).json({ error: 'Already paid' });
     }
 
-    const reference = uuidv4();
+    if (installment.status === 'PENDING_CONFIRMATION') {
+      return res.status(400).json({ error: 'Already submitted, awaiting admin confirmation' });
+    }
 
+    // Update installment status
     await prisma.loanInstallment.update({
       where: { id: installmentId },
-      data: { paystackRef: reference },
+      data: { status: 'PENDING_CONFIRMATION', submittedAt: new Date() },
     });
 
-    const paystackData = await initializeTransaction({
-      email: req.user.email,
-      amountKobo: installment.amountKobo,
-      reference,
-      metadata: {
-        installmentId: installment.id,
-        loanId: installment.loanId,
-        userId: req.user.id,
-        type: 'LOAN_REPAYMENT',
-      },
+    // Notify all admin users
+    const admins = await prisma.user.findMany({ where: { role: 'ADMIN' } });
+    const amountFormatted = (installment.amountKobo / 100).toLocaleString('en-NG', { minimumFractionDigits: 2 });
+    const dueDateFormatted = new Date(installment.dueDate).toLocaleDateString('en-NG', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
     });
 
-    return res.json({ authorization_url: paystackData.authorization_url, reference });
+    await Promise.all(
+      admins.map((admin) =>
+        createNotification(prisma, {
+          userId: admin.id,
+          title: 'Repayment Submitted',
+          message: `${req.user.fullName} has submitted repayment of ₦${amountFormatted} for installment due ${dueDateFormatted}`,
+          type: 'REPAYMENT_SUBMITTED',
+        }).catch((err) => logger.error('createNotification failed', err))
+      )
+    );
+
+    return res.json({ message: 'Payment submitted, awaiting admin confirmation' });
   } catch (err) {
     next(err);
   }

@@ -17,6 +17,10 @@ import {
   getLoanRequests,
   approveLoan,
   rejectLoan,
+  markLoanDisbursed,
+  getPendingRepayments,
+  confirmRepayment,
+  rejectRepayment,
   getRefundRequests,
   approveRefund,
   rejectRefund,
@@ -55,6 +59,12 @@ router.get('/loans', getLoanRequests);
 router.get('/loans/summary', getLoanSummary);
 router.put('/loans/:id/approve', approveLoan);
 router.put('/loans/:id/reject', rejectLoan);
+router.put('/loans/:id/disburse', markLoanDisbursed);
+
+// Repayment management
+router.get('/repayments/pending', getPendingRepayments);
+router.put('/repayments/:id/confirm', confirmRepayment);
+router.put('/repayments/:id/reject', rejectRepayment);
 
 // Refund management
 router.get('/refunds', getRefundRequests);

@@ -5,11 +5,7 @@
 
 import { PrismaClient } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
-import {
-  getBalance as paystackGetBalance,
-  createTransferRecipient,
-  initiateTransfer,
-} from '../services/paystack.service.js';
+import { getBalance as paystackGetBalance } from '../services/paystack.service.js';
 import { appendLedgerEntry, getCurrentBalance } from '../services/ledger.service.js';
 import {
   sendApprovalEmail,
@@ -19,6 +15,8 @@ import {
   sendRefundApprovalEmail,
   sendContributionConfirmedEmail,
   sendContributionRejectedEmail,
+  sendLoanDisbursedEmail,
+  sendRepaymentConfirmedEmail,
 } from '../services/email.service.js';
 import { createNotification } from '../services/notification.service.js';
 import logger from '../utils/logger.js';
@@ -58,6 +56,7 @@ export async function getDashboardStats(req, res, next) {
       activeCycle,
       monthlyContributions,
       loanStatuses,
+      repaymentsPending,
     ] = await Promise.all([
       prisma.user.count({ where: { role: 'MEMBER', deletedAt: null } }),
       prisma.user.count({ where: { status: 'PENDING', deletedAt: null } }),
@@ -83,6 +82,7 @@ export async function getDashboardStats(req, res, next) {
         by: ['status'],
         _count: { id: true },
       }),
+      prisma.loanInstallment.count({ where: { status: 'PENDING_CONFIRMATION' } }),
     ]);
 
     return res.json({
@@ -90,6 +90,7 @@ export async function getDashboardStats(req, res, next) {
       loans: { pending: pendingLoans, active: activeLoans },
       refunds: { pending: pendingRefunds },
       contributions: { pending: contributionsPending },
+      repayments: { pending: repaymentsPending },
       totalContributionsKobo: totalContributionsResult._sum.amountKobo ?? 0,
       totalRepaymentsKobo: totalRepaymentsResult._sum.amountKobo ?? 0,
       companyFundBalanceKobo: companyFundBalance,
@@ -350,69 +351,27 @@ export async function approveLoan(req, res, next) {
       });
     }
 
-    // Create transfer recipient if user doesn't have one
-    let recipientCode = loan.user.paystackRecipientCode;
-    if (!recipientCode) {
-      const recipient = await createTransferRecipient({
-        name: loan.user.accountName,
-        accountNumber: loan.user.accountNumber,
-        bankCode: loan.user.bankCode,
-      }).catch((err) => {
-        logger.error('createTransferRecipient failed', err);
-        return null;
-      });
-
-      if (recipient?.recipient_code) {
-        recipientCode = recipient.recipient_code;
-        await prisma.user.update({
-          where: { id: loan.userId },
-          data: { paystackRecipientCode: recipientCode },
-        });
-      }
-    }
-
-    if (!recipientCode) {
-      return res.status(400).json({ error: 'Could not create Paystack transfer recipient for this user' });
-    }
-
-    // Initiate transfer
-    const transferRef = uuidv4();
-    const transfer = await initiateTransfer({
-      amountKobo: loan.disbursedAmountKobo,
-      recipientCode,
-      reason: `Oma Midas loan disbursement – ${id}`,
-      reference: transferRef,
-    });
-
-    // Update loan status and record fee ledger entry in transaction
     await prisma.$transaction(async (tx) => {
       await tx.loan.update({
         where: { id },
-        data: { status: 'APPROVED', paystackTransferCode: transfer.transfer_code },
-      });
-
-      // Record the fee as a credit to company fund immediately (30% stays in)
-      await appendLedgerEntry(tx, {
-        type: 'LOAN_FEE',
-        ledger: 'COMPANY_FUND',
-        userId: loan.userId,
-        loanId: id,
-        amountKobo: loan.feeKobo,
-        reference: `fee-approve-${id}-${uuidv4()}`,
+        data: { status: 'APPROVED' },
       });
     });
 
-    sendLoanApprovalEmail(loan.user, loan).catch((err) => logger.error('sendLoanApprovalEmail failed', err));
+    const requestedFormatted = (loan.requestedAmountKobo / 100).toLocaleString('en-NG', { minimumFractionDigits: 2 });
+    const disbursedFormatted = (loan.disbursedAmountKobo / 100).toLocaleString('en-NG', { minimumFractionDigits: 2 });
+
     await createNotification(prisma, {
       userId: loan.userId,
       title: 'Loan Approved',
-      message: `Your loan of ₦${(loan.disbursedAmountKobo / 100).toFixed(2)} has been approved and is being disbursed.`,
+      message: `Your loan of ₦${requestedFormatted} has been approved. The admin will manually transfer ₦${disbursedFormatted} (after 10% fee deduction) to your registered bank account shortly.`,
       type: 'LOAN_APPROVED',
     });
 
-    await logAudit(req.user.id, 'APPROVE_LOAN', 'Loan', id, { transferRef });
+    sendLoanApprovalEmail(loan.user, loan).catch((err) => logger.error('sendLoanApprovalEmail failed', err));
+    await logAudit(req.user.id, 'APPROVE_LOAN', 'Loan', id);
 
-    return res.json({ message: 'Loan approved and transfer initiated' });
+    return res.json({ message: 'Loan approved' });
   } catch (err) {
     next(err);
   }
@@ -451,6 +410,225 @@ export async function rejectLoan(req, res, next) {
     await logAudit(req.user.id, 'REJECT_LOAN', 'Loan', id, { reason });
 
     return res.json({ message: 'Loan rejected' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// markLoanDisbursed — admin: mark approved loan as disbursed after manual transfer
+// ---------------------------------------------------------------------------
+export async function markLoanDisbursed(req, res, next) {
+  try {
+    const { id } = req.params;
+
+    const loan = await prisma.loan.findUnique({
+      where: { id },
+      include: { user: true },
+    });
+
+    if (!loan) return res.status(404).json({ error: 'Loan not found' });
+    if (loan.status !== 'APPROVED') {
+      return res.status(400).json({ error: `Loan must be in APPROVED status to mark as disbursed (current: ${loan.status})` });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.loan.update({
+        where: { id },
+        data: { status: 'DISBURSED' },
+      });
+
+      await appendLedgerEntry(tx, {
+        type: 'LOAN_DISBURSEMENT',
+        ledger: 'SAVINGS',
+        userId: loan.userId,
+        loanId: id,
+        amountKobo: loan.disbursedAmountKobo,
+        reference: `disburse-${id}-${Date.now()}`,
+      });
+
+      await appendLedgerEntry(tx, {
+        type: 'LOAN_FEE',
+        ledger: 'COMPANY_FUND',
+        userId: loan.userId,
+        loanId: id,
+        amountKobo: loan.feeKobo,
+        reference: `fee-disburse-${id}-${Date.now()}`,
+      });
+    });
+
+    const disbursedFormatted = (loan.disbursedAmountKobo / 100).toLocaleString('en-NG', { minimumFractionDigits: 2 });
+
+    await createNotification(prisma, {
+      userId: loan.userId,
+      title: 'Loan Disbursed',
+      message: `Your loan of ₦${disbursedFormatted} has been disbursed to your registered bank account.`,
+      type: 'LOAN_DISBURSED',
+    });
+
+    sendLoanDisbursedEmail(loan.user, {
+      disbursedAmountKobo: loan.disbursedAmountKobo,
+      bankName: loan.user.bankName,
+      accountNumber: loan.user.accountNumber,
+    }).catch((err) => logger.error('sendLoanDisbursedEmail failed', err));
+
+    await logAudit(req.user.id, 'DISBURSE_LOAN', 'Loan', id);
+
+    return res.json({ message: 'Loan marked as disbursed' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// getPendingRepayments — admin: list installments awaiting confirmation
+// ---------------------------------------------------------------------------
+export async function getPendingRepayments(req, res, next) {
+  try {
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
+    const skip = (page - 1) * limit;
+
+    const [installments, total] = await Promise.all([
+      prisma.loanInstallment.findMany({
+        where: { status: 'PENDING_CONFIRMATION' },
+        include: {
+          loan: {
+            include: {
+              user: {
+                select: { fullName: true, email: true, accountNumber: true, bankName: true },
+              },
+            },
+          },
+        },
+        select: {
+          id: true,
+          dueDate: true,
+          amountKobo: true,
+          submittedAt: true,
+          loanId: true,
+          loan: true,
+        },
+        orderBy: { submittedAt: 'asc' },
+        skip,
+        take: limit,
+      }),
+      prisma.loanInstallment.count({ where: { status: 'PENDING_CONFIRMATION' } }),
+    ]);
+
+    return res.json({
+      installments,
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// confirmRepayment — admin: confirm a submitted installment payment
+// ---------------------------------------------------------------------------
+export async function confirmRepayment(req, res, next) {
+  try {
+    const { id } = req.params;
+
+    const installment = await prisma.loanInstallment.findUnique({
+      where: { id },
+      include: { loan: { include: { user: true } } },
+    });
+
+    if (!installment) return res.status(404).json({ error: 'Installment not found' });
+    if (installment.status !== 'PENDING_CONFIRMATION') {
+      return res.status(400).json({ error: `Installment is not pending confirmation (status: ${installment.status})` });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.loanInstallment.update({
+        where: { id },
+        data: { status: 'PAID', paidAt: new Date() },
+      });
+
+      await appendLedgerEntry(tx, {
+        type: 'LOAN_REPAYMENT',
+        ledger: 'COMPANY_FUND',
+        userId: installment.loan.userId,
+        loanId: installment.loanId,
+        amountKobo: installment.amountKobo,
+        reference: `repayment-${id}-${Date.now()}`,
+      });
+
+      // Check if all installments for this loan are now PAID
+      const remaining = await tx.loanInstallment.count({
+        where: {
+          loanId: installment.loanId,
+          id: { not: id },
+          status: { not: 'PAID' },
+        },
+      });
+
+      if (remaining === 0) {
+        await tx.loan.update({
+          where: { id: installment.loanId },
+          data: { status: 'COMPLETED' },
+        });
+      }
+    });
+
+    const amountFormatted = (installment.amountKobo / 100).toLocaleString('en-NG', { minimumFractionDigits: 2 });
+
+    await createNotification(prisma, {
+      userId: installment.loan.userId,
+      title: 'Repayment Confirmed',
+      message: `Your repayment of ₦${amountFormatted} has been confirmed.`,
+      type: 'REPAYMENT_CONFIRMED',
+    });
+
+    sendRepaymentConfirmedEmail(installment.loan.user, {
+      amountKobo: installment.amountKobo,
+      dueDate: installment.dueDate,
+    }).catch((err) => logger.error('sendRepaymentConfirmedEmail failed', err));
+
+    await logAudit(req.user.id, 'CONFIRM_REPAYMENT', 'LoanInstallment', id);
+
+    return res.json({ message: 'Repayment confirmed' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// rejectRepayment — admin: reject a submitted installment payment
+// ---------------------------------------------------------------------------
+export async function rejectRepayment(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+
+    const installment = await prisma.loanInstallment.findUnique({
+      where: { id },
+      include: { loan: { include: { user: true } } },
+    });
+
+    if (!installment) return res.status(404).json({ error: 'Installment not found' });
+    if (installment.status !== 'PENDING_CONFIRMATION') {
+      return res.status(400).json({ error: `Installment is not pending confirmation (status: ${installment.status})` });
+    }
+
+    await prisma.loanInstallment.update({
+      where: { id },
+      data: { status: 'PENDING', rejectionReason: reason || null, submittedAt: null },
+    });
+
+    await createNotification(prisma, {
+      userId: installment.loan.userId,
+      title: 'Repayment Not Confirmed',
+      message: `Your repayment submission was not confirmed. Reason: ${reason || 'Not specified'}`,
+      type: 'REPAYMENT_REJECTED',
+    });
+
+    await logAudit(req.user.id, 'REJECT_REPAYMENT', 'LoanInstallment', id, { reason });
+
+    return res.json({ message: 'Repayment submission rejected' });
   } catch (err) {
     next(err);
   }

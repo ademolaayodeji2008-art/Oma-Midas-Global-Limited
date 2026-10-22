@@ -71,11 +71,15 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }) {
   const navigate = useNavigate();
   const links = isAdmin ? adminLinks : memberLinks;
   const [clearancePendingCount, setClearancePendingCount] = useState(0);
+  const [repaymentsPendingCount, setRepaymentsPendingCount] = useState(0);
 
   useEffect(() => {
     if (!isAdmin) return;
     api.get('/api/clearance-card/admin/pending')
       .then((res) => setClearancePendingCount((res.data || []).length))
+      .catch(() => {});
+    api.get('/api/admin/repayments/pending')
+      .then((res) => setRepaymentsPendingCount(res.data?.pagination?.total || (res.data?.installments || []).length))
       .catch(() => {});
   }, [isAdmin]);
 
@@ -124,6 +128,11 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }) {
                 {isAdmin && to === '/admin/members' && clearancePendingCount > 0 && (
                   <span className="ml-auto inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-[#C9A86A] text-[#1E1433] text-[10px] font-bold leading-none">
                     {clearancePendingCount}
+                  </span>
+                )}
+                {isAdmin && to === '/admin/loans' && repaymentsPendingCount > 0 && (
+                  <span className="ml-auto inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-amber-500 text-white text-[10px] font-bold leading-none">
+                    {repaymentsPendingCount}
                   </span>
                 )}
               </NavLink>

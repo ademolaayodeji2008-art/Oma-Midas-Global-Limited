@@ -118,7 +118,7 @@ export default function AdminDashboard() {
         { label: 'Total Savings (₦)', value: Math.round((stats.totalContributionsKobo || 0) / 100), prefix: '₦' },
         { label: 'Company Fund (₦)', value: Math.round((stats.companyFundBalanceKobo || 0) / 100), prefix: '₦' },
         { label: 'Repayments Received (₦)', value: Math.round((stats.totalRepaymentsKobo || 0) / 100), prefix: '₦' },
-        { label: 'Paystack Balance (₦)', value: Math.round((stats.paystackBalanceKobo || 0) / 100), prefix: '₦' },
+        { label: 'Pending Repayments', value: stats.repayments?.pending || 0, prefix: '' },
       ]
     : [];
 
@@ -159,6 +159,9 @@ export default function AdminDashboard() {
                       <Badge variant="warning" className="mt-1">{s.value} pending</Badge>
                     )}
                     {s.label === 'Pending Payments' && s.value > 0 && (
+                      <Badge variant="warning" className="mt-1">{s.value} awaiting</Badge>
+                    )}
+                    {s.label === 'Pending Repayments' && s.value > 0 && (
                       <Badge variant="warning" className="mt-1">{s.value} awaiting</Badge>
                     )}
                   </Card>
