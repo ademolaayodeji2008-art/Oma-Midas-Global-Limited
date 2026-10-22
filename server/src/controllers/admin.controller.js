@@ -4,7 +4,6 @@
  */
 
 import { PrismaClient } from '@prisma/client';
-import { v4 as uuidv4 } from 'uuid';
 import { getBalance as paystackGetBalance } from '../services/paystack.service.js';
 import { appendLedgerEntry, getCurrentBalance } from '../services/ledger.service.js';
 import {
@@ -435,12 +434,12 @@ export async function markLoanDisbursed(req, res, next) {
     await prisma.$transaction(async (tx) => {
       await tx.loan.update({
         where: { id },
-        data: { status: 'DISBURSED' },
+        data: { status: 'DISBURSED', disbursedAt: new Date() },
       });
 
       await appendLedgerEntry(tx, {
         type: 'LOAN_DISBURSEMENT',
-        ledger: 'SAVINGS',
+        ledger: 'COMPANY_FUND',
         userId: loan.userId,
         loanId: id,
         amountKobo: loan.disbursedAmountKobo,
@@ -496,18 +495,10 @@ export async function getPendingRepayments(req, res, next) {
           loan: {
             include: {
               user: {
-                select: { fullName: true, email: true, accountNumber: true, bankName: true },
+                select: { id: true, fullName: true, email: true, accountNumber: true, bankName: true },
               },
             },
           },
-        },
-        select: {
-          id: true,
-          dueDate: true,
-          amountKobo: true,
-          submittedAt: true,
-          loanId: true,
-          loan: true,
         },
         orderBy: { submittedAt: 'asc' },
         skip,
@@ -692,45 +683,77 @@ export async function approveRefund(req, res, next) {
       return res.status(400).json({ error: 'User has an outstanding loan — refund cannot be approved' });
     }
 
-    // Create or retrieve transfer recipient
-    let recipientCode = refund.user.paystackRecipientCode;
-    if (!recipientCode) {
-      const recipient = await createTransferRecipient({
-        name: refund.user.accountName,
-        accountNumber: refund.user.accountNumber,
-        bankCode: refund.user.bankCode,
-      }).catch(() => null);
-
-      if (recipient?.recipient_code) {
-        recipientCode = recipient.recipient_code;
-        await prisma.user.update({
-          where: { id: refund.userId },
-          data: { paystackRecipientCode: recipientCode },
-        });
-      }
-    }
-
-    if (!recipientCode) {
-      return res.status(400).json({ error: 'Could not create Paystack transfer recipient' });
-    }
-
-    const transferRef = uuidv4();
-    const transfer = await initiateTransfer({
-      amountKobo: refund.amountKobo,
-      recipientCode,
-      reason: `Oma Midas savings refund – ${id}`,
-      reference: transferRef,
-    });
-
     await prisma.refund.update({
       where: { id },
-      data: { status: 'APPROVED', paystackTransferCode: transfer.transfer_code },
+      data: { status: 'APPROVED' },
     });
 
     sendRefundApprovalEmail(refund.user, refund).catch((err) => logger.error('sendRefundApprovalEmail failed', err));
-    await logAudit(req.user.id, 'APPROVE_REFUND', 'Refund', id, { transferRef });
 
-    return res.json({ message: 'Refund approved and transfer initiated' });
+    await createNotification(prisma, {
+      userId: refund.userId,
+      title: 'Refund Approved',
+      message: `Your refund of ₦${(refund.amountKobo / 100).toLocaleString('en-NG', { minimumFractionDigits: 2 })} has been approved. The admin will manually transfer the funds to your registered bank account.`,
+      type: 'REFUND_APPROVED',
+    });
+
+    await logAudit(req.user.id, 'APPROVE_REFUND', 'Refund', id);
+
+    return res.json({ message: 'Refund approved' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// markRefundTransferred
+// ---------------------------------------------------------------------------
+export async function markRefundTransferred(req, res, next) {
+  try {
+    const { id } = req.params;
+
+    const refund = await prisma.refund.findUnique({
+      where: { id },
+      include: { user: true },
+    });
+
+    if (!refund) return res.status(404).json({ error: 'Refund not found' });
+    if (refund.status !== 'APPROVED') {
+      return res.status(400).json({ error: `Refund must be in APPROVED status to mark as transferred (current: ${refund.status})` });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.refund.update({
+        where: { id },
+        data: { status: 'TRANSFERRED' },
+      });
+
+      await appendLedgerEntry(tx, {
+        type: 'REFUND',
+        ledger: 'SAVINGS',
+        userId: refund.userId,
+        amountKobo: refund.amountKobo,
+        reference: `refund-${id}-${Date.now()}`,
+      });
+    });
+
+    const { sendRefundTransferredEmail } = await import('../services/email.service.js');
+    sendRefundTransferredEmail(refund.user, {
+      amountKobo: refund.amountKobo,
+      bankName: refund.user.bankName,
+      accountNumber: refund.user.accountNumber,
+    }).catch((err) => logger.error('sendRefundTransferredEmail failed', err));
+
+    await createNotification(prisma, {
+      userId: refund.userId,
+      title: 'Refund Transferred',
+      message: `Your savings refund of ₦${(refund.amountKobo / 100).toLocaleString('en-NG', { minimumFractionDigits: 2 })} has been transferred to your registered bank account.`,
+      type: 'REFUND_TRANSFERRED',
+    });
+
+    await logAudit(req.user.id, 'TRANSFER_REFUND', 'Refund', id);
+
+    return res.json({ message: 'Refund marked as transferred' });
   } catch (err) {
     next(err);
   }

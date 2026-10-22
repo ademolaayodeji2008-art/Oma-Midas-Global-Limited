@@ -1,0 +1,5 @@
+-- Refund manual transfer flow — schema migration record
+-- The RefundStatus enum already contains TRANSFERRED (confirmed in schema.prisma).
+-- No schema changes are required for the manual refund flow.
+-- This file is a record that the transition from Paystack to manual admin transfer
+-- requires no database migration for the Refund model.

@@ -422,6 +422,32 @@ export async function sendRefundApprovalEmail(user, refund) {
 }
 
 /**
+ * Send a refund transferred notification email.
+ * @param {{fullName:string, email:string}} user
+ * @param {{amountKobo:number, bankName:string, accountNumber:string}} refund
+ */
+export async function sendRefundTransferredEmail(user, refund) {
+  const amountNaira = (refund.amountKobo / 100).toLocaleString('en-NG', { minimumFractionDigits: 2 });
+  const html = htmlWrapper(
+    'Savings Refund Transferred',
+    heading('Your Savings Refund Has Been Sent!') +
+      paragraph(`Dear <strong>${user.fullName}</strong>,`) +
+      paragraph(
+        'The cooperative administrator has completed the manual transfer of your approved savings refund.'
+      ) +
+      infoBox([
+        ['Refund Amount', `₦${amountNaira}`],
+        ['Bank', refund.bankName || 'N/A'],
+        ['Account Number', refund.accountNumber || 'N/A'],
+      ]) +
+      paragraph(
+        'Please check your bank account to confirm receipt. If the funds have not arrived within 1–3 business days, contact the cooperative administrator.'
+      )
+  );
+  await send(user.email, 'Savings refund transferred — Oma Midas', html);
+}
+
+/**
  * Send a loan disbursed notification email.
  * @param {{fullName:string, email:string}} user
  * @param {{disbursedAmountKobo:number, bankName:string, accountNumber:string}} details

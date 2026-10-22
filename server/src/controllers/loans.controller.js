@@ -126,14 +126,6 @@ export async function checkEligibility(req, res, next) {
 // ---------------------------------------------------------------------------
 export async function requestLoan(req, res, next) {
   try {
-    // Loan request deadline: must be submitted before the 25th of each month
-    const today = new Date();
-    if (today.getDate() > 25) {
-      return res.status(400).json({
-        message: 'Loan requests must be submitted before the 25th of each month. Please try again next month.',
-      });
-    }
-
     const { requestedAmountKobo, repaymentMonths, installmentSchedule } = req.body;
     const userId = req.user.id;
 

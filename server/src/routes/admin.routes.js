@@ -24,6 +24,7 @@ import {
   getRefundRequests,
   approveRefund,
   rejectRefund,
+  markRefundTransferred,
   getCompanyFundBalance,
   recordFundTopup,
   getAllTransactions,
@@ -70,6 +71,7 @@ router.put('/repayments/:id/reject', rejectRepayment);
 router.get('/refunds', getRefundRequests);
 router.put('/refunds/:id/approve', approveRefund);
 router.put('/refunds/:id/reject', rejectRefund);
+router.put('/refunds/:id/transferred', markRefundTransferred);
 
 // Company fund
 router.get('/company-fund', getCompanyFundBalance);

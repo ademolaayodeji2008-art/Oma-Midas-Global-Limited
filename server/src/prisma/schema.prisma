@@ -168,6 +168,7 @@ model Loan {
   disbursedAmountKobo   Int
   totalRepayableKobo    Int
   status                LoanStatus @default(PENDING)
+  disbursedAt           DateTime?
   rejectionReason       String?
   paystackTransferCode  String?
   repaymentMonths       Int
