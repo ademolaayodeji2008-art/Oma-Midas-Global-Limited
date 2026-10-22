@@ -1,0 +1,43 @@
+{
+  "verdict": "APPROVED",
+  "timestamp": "2026-10-22T08:05:00.000Z",
+  "iteration": 1,
+  "summary": "All FEAT-001 and FEAT-002 integration checks passed after applying missing database migrations.",
+  "checks": {
+    "server_startup": {
+      "status": "PASS",
+      "detail": "Server starts cleanly — 'Database connected' + 'Server running on port 5000', no errors."
+    },
+    "GET /api/admin/repayments/pending": {
+      "status": "PASS",
+      "detail": "HTTP 200 with {installments:[], pagination:{page:1,limit:20,total:0,totalPages:0}}. Fixed by removing conflicting top-level select."
+    },
+    "PUT /api/admin/refunds/:id/approve": {
+      "status": "PASS",
+      "detail": "HTTP 404 for unknown id (not a crash). No Paystack code — returns {error:'Refund not found'}."
+    },
+    "PUT /api/admin/refunds/:id/transferred": {
+      "status": "PASS",
+      "detail": "HTTP 404 for unknown id (route IS registered, not 'Cannot PUT'). Returns {error:'Refund not found'}."
+    },
+    "PUT /api/admin/loans/:id/disburse": {
+      "status": "PASS",
+      "detail": "HTTP 404 for unknown id (not a crash). disbursedAt column exists in DB. Returns {error:'Loan not found'}."
+    },
+    "client_build": {
+      "status": "PASS",
+      "detail": "Vite build: 1910 modules, 0 errors. Refunds.jsx compiles clean with TRANSFERRED badge and Mark as Transferred button."
+    },
+    "database_migrations": {
+      "status": "APPLIED",
+      "detail": "loan-manual-migration.sql (submittedAt, rejectionReason on LoanInstallment, PENDING_CONFIRMATION enum) and disbursed-at-migration.sql (disbursedAt on Loan) applied to Supabase via prisma db execute. npx prisma generate ran successfully."
+    }
+  },
+  "changes_requested": [],
+  "seam_issues_found": [
+    {
+      "issue": "Database migrations not applied — LoanInstallment.submittedAt and Loan.disbursedAt columns missing in Supabase",
+      "resolution": "Applied loan-manual-migration.sql and disbursed-at-migration.sql to Supabase directly via prisma db execute. Regenerated Prisma client. No code changes required."
+    }
+  ]
+}
