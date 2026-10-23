@@ -1,6 +1,6 @@
 /**
  * LoanCalculator.jsx — Interactive loan breakdown calculator.
- * Shows: amount requested, fee (30%), amount you receive (70%), total repayable.
+ * Shows: amount requested, fee (10%), amount you receive (90%), total repayable.
  */
 
 import React, { useState } from 'react';
@@ -8,10 +8,10 @@ import Card from '../ui/Card';
 
 /**
  * @param {object} props
- * @param {number} props.feePercentage - Default 30
+ * @param {number} props.feePercentage - Default 10
  * @param {function} props.onChange - Called with { amountKobo, feeKobo, netKobo, totalRepayableKobo }
  */
-export default function LoanCalculator({ feePercentage = 30, onChange }) {
+export default function LoanCalculator({ feePercentage = 10, onChange }) {
   const [amountNaira, setAmountNaira] = useState('');
 
   const amountKobo = Math.round(parseFloat(amountNaira || '0') * 100);

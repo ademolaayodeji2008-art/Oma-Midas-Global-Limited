@@ -31,7 +31,7 @@ export function useNotifications() {
 
   const markRead = useCallback(async (ids) => {
     try {
-      await api.post('/api/notifications/mark-read', { ids });
+      await api.put('/api/notifications/read', { ids });
       setNotifications((prev) =>
         prev.map((n) => (ids.includes(n.id) ? { ...n, isRead: true } : n))
       );

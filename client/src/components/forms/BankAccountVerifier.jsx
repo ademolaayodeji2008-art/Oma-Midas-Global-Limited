@@ -33,7 +33,8 @@ export default function BankAccountVerifier({ onVerified, initialValues = {} }) 
     setBankName(selected?.name || '');
     setAccountName('');
     setError('');
-    if (onVerified) onVerified('', accountNumber, '', e.target.value);
+    // Always notify parent with current values so form state stays in sync
+    if (onVerified) onVerified(selected?.name || '', accountNumber, '', e.target.value);
   };
 
   const verifyAccount = async () => {
@@ -51,6 +52,8 @@ export default function BankAccountVerifier({ onVerified, initialValues = {} }) 
     } catch (err) {
       const msg = err.response?.data?.message || 'Could not verify account. Check details and try again.';
       setError(msg);
+      // Still pass the entered values to parent so form can submit
+      if (onVerified) onVerified(bankName, accountNumber, '', bankCode);
     } finally {
       setVerifying(false);
     }
@@ -89,9 +92,12 @@ export default function BankAccountVerifier({ onVerified, initialValues = {} }) 
           maxLength={10}
           value={accountNumber}
           onChange={(e) => {
-            setAccountNumber(e.target.value.replace(/\D/g, ''));
+            const val = e.target.value.replace(/\D/g, '');
+            setAccountNumber(val);
             setAccountName('');
             setError('');
+            // Keep parent in sync as user types
+            if (onVerified) onVerified(bankName, val, '', bankCode);
           }}
           onBlur={verifyAccount}
           placeholder="10-digit account number"

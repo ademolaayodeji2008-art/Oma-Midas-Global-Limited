@@ -5,22 +5,33 @@
 
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import {
+  LayoutDashboard,
+  Wallet,
+  ClipboardList,
+  ArrowLeftRight,
+  User,
+  Users,
+  Briefcase,
+  FileText,
+  Settings,
+} from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 
 const memberTabs = [
-  { to: '/member/dashboard', label: 'Home', icon: '🏠' },
-  { to: '/member/contributions', label: 'Save', icon: '💰' },
-  { to: '/member/loan-request', label: 'Loans', icon: '📋' },
-  { to: '/member/transactions', label: 'History', icon: '📊' },
-  { to: '/member/profile', label: 'Profile', icon: '👤' },
+  { to: '/member/dashboard',     label: 'Home',     Icon: LayoutDashboard },
+  { to: '/member/contributions', label: 'Save',     Icon: Wallet },
+  { to: '/member/loan-request',  label: 'Loans',    Icon: ClipboardList },
+  { to: '/member/transactions',  label: 'History',  Icon: ArrowLeftRight },
+  { to: '/member/profile',       label: 'Profile',  Icon: User },
 ];
 
 const adminTabs = [
-  { to: '/admin/dashboard', label: 'Dashboard', icon: '📈' },
-  { to: '/admin/members', label: 'Members', icon: '👥' },
-  { to: '/admin/loans', label: 'Loans', icon: '💼' },
-  { to: '/admin/reports', label: 'Reports', icon: '📄' },
-  { to: '/admin/settings', label: 'Settings', icon: '⚙️' },
+  { to: '/admin/dashboard', label: 'Dashboard', Icon: LayoutDashboard },
+  { to: '/admin/members',   label: 'Members',   Icon: Users },
+  { to: '/admin/loans',     label: 'Loans',     Icon: Briefcase },
+  { to: '/admin/reports',   label: 'Reports',   Icon: FileText },
+  { to: '/admin/settings',  label: 'Settings',  Icon: Settings },
 ];
 
 export default function MobileMenu() {
@@ -33,19 +44,19 @@ export default function MobileMenu() {
       aria-label="Bottom navigation"
     >
       <ul className="flex justify-around">
-        {tabs.map((tab) => (
-          <li key={tab.to} className="flex-1">
+        {tabs.map(({ to, label, Icon }) => (
+          <li key={to} className="flex-1">
             <NavLink
-              to={tab.to}
+              to={to}
               className={({ isActive }) =>
                 [
-                  'flex flex-col items-center gap-0.5 py-2 text-xs font-medium transition-colors',
-                  isActive ? 'text-primary' : 'text-gray-400',
+                  'flex flex-col items-center gap-1 py-2 text-xs font-medium transition-colors',
+                  isActive ? 'text-primary' : 'text-gray-400 hover:text-primary',
                 ].join(' ')
               }
             >
-              <span className="text-xl" aria-hidden="true">{tab.icon}</span>
-              {tab.label}
+              <Icon size={20} aria-hidden="true" />
+              {label}
             </NavLink>
           </li>
         ))}

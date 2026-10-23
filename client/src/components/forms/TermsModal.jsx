@@ -27,8 +27,8 @@ export default function TermsModal({ isOpen, onClose, onAgree }) {
     setScrolledToBottom(false);
     setChecked(false);
     setLoading(true);
-    api.get('/api/admin/settings/terms_and_conditions')
-      .then((res) => setTermsHtml(res.data.value || res.data.setting?.value || 'Terms and conditions not found.'))
+    api.get('/api/public/terms')
+      .then((res) => setTermsHtml(res.data.value || 'Terms and conditions not found.'))
       .catch(() => setTermsHtml('Terms and conditions not available at this time.'))
       .finally(() => setLoading(false));
   }, [isOpen]);

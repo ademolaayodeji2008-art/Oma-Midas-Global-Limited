@@ -24,6 +24,8 @@ const registerSchema = z.object({
   fullName: z.string().min(2, 'Full name must be at least 2 characters'),
   email: z.string().email('Invalid email address'),
   phone: z.string().min(10, 'Phone number must be at least 10 characters'),
+  nin: z.string().length(11, 'NIN must be exactly 11 digits').regex(/^\d+$/, 'NIN must contain only numbers'),
+  address: z.string().min(5, 'Address must be at least 5 characters'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   bankName: z.string().min(1, 'Bank name is required'),
   bankCode: z.string().min(1, 'Bank code is required'),

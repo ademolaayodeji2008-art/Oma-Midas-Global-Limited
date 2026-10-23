@@ -60,7 +60,7 @@ export default function ResetPassword() {
         <div className="w-full max-w-md">
           <div className="card-base">
             <div className="text-center mb-6">
-              <img src="/logo.svg" alt="Oma Midas logo" className="h-12 w-12 mx-auto mb-3" />
+              <img src="/logo.jpeg" alt="Oma Midas logo" className="h-12 w-12 mx-auto mb-3" />
               <h1 className="font-heading text-2xl font-bold text-primary">Set new password</h1>
             </div>
 

@@ -44,7 +44,7 @@ export default function Navbar() {
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 font-heading font-bold text-primary text-lg">
-          <img src="/logo.svg" alt="Oma Midas logo" className="h-8 w-8" />
+          <img src="/logo.jpeg" alt="Oma Midas logo" className="h-8 w-8" />
           Oma Midas
         </Link>
 

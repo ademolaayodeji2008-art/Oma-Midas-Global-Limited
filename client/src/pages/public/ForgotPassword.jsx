@@ -33,7 +33,7 @@ export default function ForgotPassword() {
       <main className="min-h-[calc(100vh-64px)] flex items-center justify-center px-4 py-12 bg-background">
         <div className="w-full max-w-md">
           <div className="card-base text-center">
-            <img src="/logo.svg" alt="Oma Midas logo" className="h-12 w-12 mx-auto mb-4" />
+            <img src="/logo.jpeg" alt="Oma Midas logo" className="h-12 w-12 mx-auto mb-4" />
             <h1 className="font-heading text-2xl font-bold text-primary mb-2">Reset your password</h1>
 
             {sent ? (

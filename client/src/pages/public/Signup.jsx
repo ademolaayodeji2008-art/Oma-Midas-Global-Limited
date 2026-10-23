@@ -20,10 +20,12 @@ export default function Signup() {
     fullName: '',
     email: '',
     phone: '',
+    nin: '',
+    address: '',
     password: '',
     confirmPassword: '',
   });
-  const [bankData, setBankData] = useState(null);
+  const [bankData, setBankData] = useState({ bankName: '', bankCode: '', accountNumber: '', accountName: '' });
   const [termsAgreed, setTermsAgreed] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -35,10 +37,12 @@ export default function Signup() {
     const errs = {};
     if (!form.fullName.trim()) errs.fullName = 'Full name is required';
     if (!form.email) errs.email = 'Email is required';
-    if (!form.phone) errs.phone = 'Phone is required';
+    if (!form.phone || form.phone.length < 10) errs.phone = 'Enter a valid phone number (min 10 digits)';
+    if (!form.nin || form.nin.length !== 11 || !/^\d+$/.test(form.nin)) errs.nin = 'NIN must be exactly 11 digits';
+    if (!form.address || form.address.trim().length < 5) errs.address = 'Enter your full address';
     if (form.password.length < 8) errs.password = 'Password must be at least 8 characters';
     if (form.password !== form.confirmPassword) errs.confirmPassword = 'Passwords do not match';
-    if (!bankData?.accountName) errs.bank = 'Please verify your bank account';
+    if (!bankData?.accountNumber || bankData.accountNumber.length < 10) errs.bank = 'Please enter your 10-digit account number';
     if (!termsAgreed) errs.terms = 'You must agree to the Terms & Conditions';
     return errs;
   };
@@ -55,15 +59,17 @@ export default function Signup() {
         fullName: form.fullName,
         email: form.email,
         phone: form.phone,
+        nin: form.nin,
+        address: form.address,
         password: form.password,
-        bankName: bankData.bankName,
-        bankCode: bankData.bankCode,
-        accountNumber: bankData.accountNumber,
-        accountName: bankData.accountName,
+        bankName: bankData?.bankName || '',
+        bankCode: bankData?.bankCode || '',
+        accountNumber: bankData?.accountNumber || '',
+        accountName: bankData?.accountName || bankData?.accountNumber || '',
       });
       navigate('/pending');
     } catch (err) {
-      const message = err.response?.data?.message || 'Registration failed. Please try again.';
+      const message = err.response?.data?.message || err.response?.data?.error || 'Registration failed. Please try again.';
       toast({ message, type: 'error' });
     } finally {
       setLoading(false);
@@ -80,50 +86,113 @@ export default function Signup() {
         <div className="w-full max-w-lg">
           <div className="card-base">
             <div className="text-center mb-6">
-              <img src="/logo.svg" alt="Oma Midas logo" className="h-12 w-12 mx-auto mb-3" />
+              <img src="/logo.jpeg" alt="Oma Midas logo" className="h-12 w-12 mx-auto mb-3 rounded-full object-cover" />
               <h1 className="font-heading text-2xl font-bold text-primary">Create your account</h1>
               <p className="text-sm text-gray-400 mt-1">Join the Oma Midas cooperative</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+
+              {/* Personal Information */}
+              <div>
+                <p className="text-xs font-semibold text-primary uppercase tracking-wide mb-3 border-b border-gray-100 pb-1">Personal Information</p>
+              </div>
+
               {/* Full name */}
               <div>
-                <label htmlFor="fullName" className="block text-sm font-medium text-charcoal mb-1">Full Name</label>
-                <input id="fullName" type="text" required value={form.fullName} onChange={set('fullName')} className={inputClass('fullName')} autoComplete="name" />
+                <label htmlFor="fullName" className="block text-sm font-medium text-charcoal mb-1">
+                  Full Name <span className="text-error">*</span>
+                </label>
+                <input id="fullName" type="text" required value={form.fullName} onChange={set('fullName')} className={inputClass('fullName')} autoComplete="name" placeholder="e.g. Adebayo John Ola" />
                 {errors.fullName && <p className="text-xs text-error mt-1">{errors.fullName}</p>}
               </div>
 
               {/* Email */}
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-charcoal mb-1">Email</label>
-                <input id="email" type="email" required value={form.email} onChange={set('email')} className={inputClass('email')} autoComplete="email" />
+                <label htmlFor="email" className="block text-sm font-medium text-charcoal mb-1">
+                  Email Address <span className="text-error">*</span>
+                </label>
+                <input id="email" type="email" required value={form.email} onChange={set('email')} className={inputClass('email')} autoComplete="email" placeholder="you@example.com" />
                 {errors.email && <p className="text-xs text-error mt-1">{errors.email}</p>}
               </div>
 
               {/* Phone */}
               <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-charcoal mb-1">Phone Number</label>
-                <input id="phone" type="tel" required value={form.phone} onChange={set('phone')} className={inputClass('phone')} autoComplete="tel" />
+                <label htmlFor="phone" className="block text-sm font-medium text-charcoal mb-1">
+                  Phone Number <span className="text-error">*</span>
+                </label>
+                <input id="phone" type="tel" required value={form.phone} onChange={set('phone')} className={inputClass('phone')} autoComplete="tel" placeholder="e.g. 08012345678" />
                 {errors.phone && <p className="text-xs text-error mt-1">{errors.phone}</p>}
+              </div>
+
+              {/* NIN */}
+              <div>
+                <label htmlFor="nin" className="block text-sm font-medium text-charcoal mb-1">
+                  National Identification Number (NIN) <span className="text-error">*</span>
+                </label>
+                <input
+                  id="nin"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={11}
+                  required
+                  value={form.nin}
+                  onChange={(e) => setForm((prev) => ({ ...prev, nin: e.target.value.replace(/\D/g, '') }))}
+                  className={inputClass('nin')}
+                  placeholder="11-digit NIN"
+                  autoComplete="off"
+                />
+                <p className="text-xs text-gray-400 mt-1">Your NIN is required for identity verification and kept securely.</p>
+                {errors.nin && <p className="text-xs text-error mt-1">{errors.nin}</p>}
+              </div>
+
+              {/* Address */}
+              <div>
+                <label htmlFor="address" className="block text-sm font-medium text-charcoal mb-1">
+                  Residential Address <span className="text-error">*</span>
+                </label>
+                <textarea
+                  id="address"
+                  required
+                  rows={2}
+                  value={form.address}
+                  onChange={set('address')}
+                  className={`${inputClass('address')} resize-none`}
+                  placeholder="e.g. 12 Broad Street, Lagos Island, Lagos"
+                  autoComplete="street-address"
+                />
+                {errors.address && <p className="text-xs text-error mt-1">{errors.address}</p>}
+              </div>
+
+              {/* Password section */}
+              <div>
+                <p className="text-xs font-semibold text-primary uppercase tracking-wide mb-3 border-b border-gray-100 pb-1">Password</p>
               </div>
 
               {/* Password */}
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-charcoal mb-1">Password</label>
-                <input id="password" type="password" required value={form.password} onChange={set('password')} className={inputClass('password')} autoComplete="new-password" />
+                <label htmlFor="password" className="block text-sm font-medium text-charcoal mb-1">
+                  Password <span className="text-error">*</span>
+                </label>
+                <input id="password" type="password" required value={form.password} onChange={set('password')} className={inputClass('password')} autoComplete="new-password" placeholder="Min. 8 characters" />
                 {errors.password && <p className="text-xs text-error mt-1">{errors.password}</p>}
               </div>
 
               {/* Confirm password */}
               <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-charcoal mb-1">Confirm Password</label>
-                <input id="confirmPassword" type="password" required value={form.confirmPassword} onChange={set('confirmPassword')} className={inputClass('confirmPassword')} autoComplete="new-password" />
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-charcoal mb-1">
+                  Confirm Password <span className="text-error">*</span>
+                </label>
+                <input id="confirmPassword" type="password" required value={form.confirmPassword} onChange={set('confirmPassword')} className={inputClass('confirmPassword')} autoComplete="new-password" placeholder="Re-enter your password" />
                 {errors.confirmPassword && <p className="text-xs text-error mt-1">{errors.confirmPassword}</p>}
               </div>
 
-              {/* Bank verifier */}
+              {/* Bank section */}
               <div>
-                <p className="text-sm font-medium text-charcoal mb-2">Bank Account</p>
+                <p className="text-xs font-semibold text-primary uppercase tracking-wide mb-3 border-b border-gray-100 pb-1">Bank Account</p>
+              </div>
+
+              <div>
                 <BankAccountVerifier
                   onVerified={(bankName, accountNumber, accountName, bankCode) =>
                     setBankData({ bankName, accountNumber, accountName, bankCode })

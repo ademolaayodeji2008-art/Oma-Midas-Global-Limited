@@ -4,7 +4,7 @@
  */
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { Clock, Copy, Check, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { Clock, Copy, Check, ArrowLeft, Flame } from 'lucide-react';
 import AppLayout from '../../components/layout/AppLayout';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
@@ -52,7 +52,9 @@ function ContributionList({ contributions, loading, onMakePayment, currentMonth,
     <div className="space-y-6">
       {/* Streak card */}
       <Card className="flex items-center gap-4">
-        <div className="text-3xl" aria-hidden="true">🔥</div>
+        <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
+          <Flame size={22} className="text-orange-500" aria-hidden="true" />
+        </div>
         <div>
           <p className="text-sm text-gray-400">Payment Streak</p>
           <p className="font-heading text-2xl font-bold text-primary">
@@ -339,11 +341,13 @@ export default function Contributions() {
     try {
       await api.post('/api/contributions/submit-payment', {
         amountKobo: paymentAmount,
+        month: selectedContribution?.month || currentMonth,
+        year: selectedContribution?.year || currentYear,
         paymentNote,
       });
       setView('pending');
     } catch (err) {
-      toast({ message: err.response?.data?.error || 'Failed to submit payment', type: 'error' });
+      toast({ message: err.response?.data?.error || err.response?.data?.message || 'Failed to submit payment', type: 'error' });
     } finally {
       setSubmitting(false);
     }
@@ -357,13 +361,32 @@ export default function Contributions() {
     fetchData();
   };
 
+  // Always show the current month as payable if no record exists for it yet
+  const hasCurrentMonth = contributions.some(
+    (c) => c.month === currentMonth && c.year === currentYear
+  );
+  const displayContributions = hasCurrentMonth
+    ? contributions
+    : [
+        {
+          id: `virtual-${currentMonth}-${currentYear}`,
+          month: currentMonth,
+          year: currentYear,
+          status: 'PENDING',
+          amountKobo: 0,
+          rejectionReason: null,
+          _virtual: true,
+        },
+        ...contributions,
+      ];
+
   return (
     <PageTransition>
       <AppLayout title="Contributions">
         <div className="space-y-6">
           {view === 'list' && (
             <ContributionList
-              contributions={contributions}
+              contributions={displayContributions}
               loading={loading}
               onMakePayment={handleMakePayment}
               currentMonth={currentMonth}

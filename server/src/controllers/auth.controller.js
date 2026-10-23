@@ -23,7 +23,7 @@ const COOKIE_OPTIONS = {
 // ---------------------------------------------------------------------------
 export async function register(req, res, next) {
   try {
-    const { fullName, email, phone, password, bankName, bankCode, accountNumber, accountName } = req.validated;
+    const { fullName, email, phone, nin, address, password, bankName, bankCode, accountNumber, accountName } = req.validated;
 
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
@@ -37,6 +37,8 @@ export async function register(req, res, next) {
         fullName,
         email,
         phone,
+        nin,
+        address,
         passwordHash,
         bankName,
         bankCode,
