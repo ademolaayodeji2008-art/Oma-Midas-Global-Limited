@@ -13,8 +13,8 @@ const prisma = new PrismaClient();
 
 const COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict',
+  secure: true, // Always true for production (HTTPS required for SameSite=None)
+  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' allows cross-domain cookies
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
 };
 
