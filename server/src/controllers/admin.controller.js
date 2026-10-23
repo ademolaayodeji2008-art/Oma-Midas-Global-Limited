@@ -431,30 +431,60 @@ export async function markLoanDisbursed(req, res, next) {
       return res.status(400).json({ error: `Loan must be in APPROVED status to mark as disbursed (current: ${loan.status})` });
     }
 
-    await prisma.$transaction(async (tx) => {
-      await tx.loan.update({
-        where: { id },
-        data: { status: 'DISBURSED', disbursedAt: new Date() },
+    // FIX #4: Re-verify company fund balance before disbursement
+    const fundBalance = await getCurrentBalance('COMPANY_FUND');
+    if (fundBalance < loan.disbursedAmountKobo) {
+      return res.status(400).json({
+        error: `Cannot disburse: Insufficient company funds. Available: ₦${(fundBalance / 100).toFixed(2)}, Required: ₦${(loan.disbursedAmountKobo / 100).toFixed(2)}`,
       });
+    }
 
-      await appendLedgerEntry(tx, {
-        type: 'LOAN_DISBURSEMENT',
-        ledger: 'COMPANY_FUND',
-        userId: loan.userId,
-        loanId: id,
-        amountKobo: loan.disbursedAmountKobo,
-        reference: `disburse-${id}-${Date.now()}`,
-      });
+    try {
+      await prisma.$transaction(async (tx) => {
+        await tx.loan.update({
+          where: { id },
+          data: { status: 'DISBURSED', disbursedAt: new Date() },
+        });
 
-      await appendLedgerEntry(tx, {
-        type: 'LOAN_FEE',
-        ledger: 'COMPANY_FUND',
-        userId: loan.userId,
-        loanId: id,
-        amountKobo: loan.feeKobo,
-        reference: `fee-disburse-${id}-${Date.now()}`,
+        const { appendLedgerEntry, generateLedgerReference } = await import('../services/ledger.service.js');
+
+        try {
+          await appendLedgerEntry(tx, {
+            type: 'LOAN_DISBURSEMENT',
+            ledger: 'COMPANY_FUND',
+            userId: loan.userId,
+            loanId: id,
+            amountKobo: loan.disbursedAmountKobo,
+            reference: generateLedgerReference('LOAN_DISBURSEMENT', id),
+          });
+
+          await appendLedgerEntry(tx, {
+            type: 'LOAN_FEE',
+            ledger: 'COMPANY_FUND',
+            userId: loan.userId,
+            loanId: id,
+            amountKobo: loan.feeKobo,
+            reference: generateLedgerReference('LOAN_FEE', id),
+          });
+        } catch (ledgerError) {
+          logger.error('Ledger entry failed during loan disbursement', {
+            loanId: id,
+            userId: loan.userId,
+            error: ledgerError,
+          });
+          throw ledgerError;
+        }
       });
-    });
+    } catch (transactionError) {
+      logger.error('Loan disbursement transaction failed', {
+        loanId: id,
+        error: transactionError,
+      });
+      return res.status(500).json({
+        error: 'Disbursement failed. Please try again or contact support.',
+        details: process.env.NODE_ENV === 'development' ? transactionError.message : undefined,
+      });
+    }
 
     const disbursedFormatted = (loan.disbursedAmountKobo / 100).toLocaleString('en-NG', { minimumFractionDigits: 2 });
 
@@ -533,37 +563,69 @@ export async function confirmRepayment(req, res, next) {
       return res.status(400).json({ error: `Installment is not pending confirmation (status: ${installment.status})` });
     }
 
-    await prisma.$transaction(async (tx) => {
-      await tx.loanInstallment.update({
-        where: { id },
-        data: { status: 'PAID', paidAt: new Date() },
-      });
-
-      await appendLedgerEntry(tx, {
-        type: 'LOAN_REPAYMENT',
-        ledger: 'COMPANY_FUND',
-        userId: installment.loan.userId,
-        loanId: installment.loanId,
-        amountKobo: installment.amountKobo,
-        reference: `repayment-${id}-${Date.now()}`,
-      });
-
-      // Check if all installments for this loan are now PAID
-      const remaining = await tx.loanInstallment.count({
-        where: {
-          loanId: installment.loanId,
-          id: { not: id },
-          status: { not: 'PAID' },
-        },
-      });
-
-      if (remaining === 0) {
-        await tx.loan.update({
-          where: { id: installment.loanId },
-          data: { status: 'COMPLETED' },
+    try {
+      await prisma.$transaction(async (tx) => {
+        await tx.loanInstallment.update({
+          where: { id },
+          data: { status: 'PAID', paidAt: new Date() },
         });
-      }
-    });
+
+        const { appendLedgerEntry, generateLedgerReference } = await import('../services/ledger.service.js');
+
+        try {
+          await appendLedgerEntry(tx, {
+            type: 'LOAN_REPAYMENT',
+            ledger: 'COMPANY_FUND',
+            userId: installment.loan.userId,
+            loanId: installment.loanId,
+            amountKobo: installment.amountKobo,
+            reference: generateLedgerReference('LOAN_REPAYMENT', id),
+          });
+        } catch (ledgerError) {
+          logger.error('Ledger entry failed during repayment confirmation', {
+            installmentId: id,
+            loanId: installment.loanId,
+            error: ledgerError,
+          });
+          throw ledgerError;
+        }
+
+        // FIX #1: Transition loan status from DISBURSED to REPAYING on first payment
+        if (installment.loan.status === 'DISBURSED') {
+          await tx.loan.update({
+            where: { id: installment.loanId },
+            data: { status: 'REPAYING' },
+          });
+          logger.info(`Loan ${installment.loanId} transitioned from DISBURSED to REPAYING`);
+        }
+
+        // Check if all installments for this loan are now PAID
+        const remaining = await tx.loanInstallment.count({
+          where: {
+            loanId: installment.loanId,
+            id: { not: id },
+            status: { not: 'PAID' },
+          },
+        });
+
+        if (remaining === 0) {
+          await tx.loan.update({
+            where: { id: installment.loanId },
+            data: { status: 'COMPLETED' },
+          });
+          logger.info(`Loan ${installment.loanId} completed - all installments paid`);
+        }
+      });
+    } catch (transactionError) {
+      logger.error('Repayment confirmation transaction failed', {
+        installmentId: id,
+        error: transactionError,
+      });
+      return res.status(500).json({
+        error: 'Repayment confirmation failed. Please try again or contact support.',
+        details: process.env.NODE_ENV === 'development' ? transactionError.message : undefined,
+      });
+    }
 
     const amountFormatted = (installment.amountKobo / 100).toLocaleString('en-NG', { minimumFractionDigits: 2 });
 
@@ -605,19 +667,40 @@ export async function rejectRepayment(req, res, next) {
       return res.status(400).json({ error: `Installment is not pending confirmation (status: ${installment.status})` });
     }
 
+    // FIX #5: Preserve rejection history
+    const rejectionHistory = installment.rejectionHistory ? JSON.parse(JSON.stringify(installment.rejectionHistory)) : [];
+    rejectionHistory.push({
+      rejectedAt: new Date().toISOString(),
+      rejectedBy: req.user.id,
+      reason: reason || 'Not specified',
+      amountKobo: installment.amountKobo,
+      originalSubmittedAt: installment.submittedAt?.toISOString() || null,
+    });
+
     await prisma.loanInstallment.update({
       where: { id },
-      data: { status: 'PENDING', rejectionReason: reason || null, submittedAt: null },
+      data: {
+        status: 'PENDING',
+        rejectionReason: reason || null,
+        lastRejectedAt: new Date(),
+        rejectionCount: { increment: 1 },
+        rejectionHistory,
+        // Keep submittedAt for audit trail
+      },
     });
 
     await createNotification(prisma, {
       userId: installment.loan.userId,
       title: 'Repayment Not Confirmed',
-      message: `Your repayment submission was not confirmed. Reason: ${reason || 'Not specified'}`,
+      message: `Your repayment submission was not confirmed. Reason: ${reason || 'Not specified'}. Please resubmit the correct amount.`,
       type: 'REPAYMENT_REJECTED',
     });
 
-    await logAudit(req.user.id, 'REJECT_REPAYMENT', 'LoanInstallment', id, { reason });
+    await logAudit(req.user.id, 'REJECT_REPAYMENT', 'LoanInstallment', id, {
+      reason,
+      rejectionCount: (installment.rejectionCount || 0) + 1,
+      amountKobo: installment.amountKobo,
+    });
 
     return res.json({ message: 'Repayment submission rejected' });
   } catch (err) {
@@ -728,12 +811,14 @@ export async function markRefundTransferred(req, res, next) {
         data: { status: 'TRANSFERRED' },
       });
 
+      const { appendLedgerEntry, generateLedgerReference } = await import('../services/ledger.service.js');
+
       await appendLedgerEntry(tx, {
         type: 'REFUND',
         ledger: 'SAVINGS',
         userId: refund.userId,
         amountKobo: refund.amountKobo,
-        reference: `refund-${id}-${Date.now()}`,
+        reference: generateLedgerReference('REFUND', id),
       });
     });
 
@@ -1224,24 +1309,44 @@ export async function approveContribution(req, res, next) {
     const now = new Date();
     const amountKobo = contribution.amountSubmittedKobo || contribution.amountKobo;
 
-    await prisma.$transaction(async (tx) => {
-      await tx.contribution.update({
-        where: { id },
-        data: { status: 'PAID', amountKobo, paidAt: now },
-      });
+    try {
+      await prisma.$transaction(async (tx) => {
+        await tx.contribution.update({
+          where: { id },
+          data: { status: 'PAID', amountKobo, paidAt: now },
+        });
 
-      // Dynamic import to avoid circular deps
-      const { appendLedgerEntry } = await import('../services/ledger.service.js');
-      const reference = `contribution-${id}-${Date.now()}`;
+        // Dynamic import to avoid circular deps
+        const { appendLedgerEntry, generateLedgerReference } = await import('../services/ledger.service.js');
+        const reference = generateLedgerReference('CONTRIBUTION', id);
 
-      await appendLedgerEntry(tx, {
-        type: 'CONTRIBUTION',
-        ledger: 'SAVINGS',
-        userId: contribution.userId,
-        amountKobo,
-        reference,
+        try {
+          await appendLedgerEntry(tx, {
+            type: 'CONTRIBUTION',
+            ledger: 'SAVINGS',
+            userId: contribution.userId,
+            amountKobo,
+            reference,
+          });
+        } catch (ledgerError) {
+          logger.error('Ledger entry failed, rolling back contribution approval', {
+            contributionId: id,
+            userId: contribution.userId,
+            error: ledgerError,
+          });
+          throw ledgerError;
+        }
       });
-    });
+    } catch (transactionError) {
+      logger.error('Contribution approval transaction failed', {
+        contributionId: id,
+        error: transactionError,
+      });
+      return res.status(500).json({
+        error: 'Transaction failed. Please try again or contact support.',
+        details: process.env.NODE_ENV === 'development' ? transactionError.message : undefined,
+      });
+    }
 
     const monthName = new Date(contribution.year, contribution.month - 1).toLocaleString('en-NG', { month: 'long' });
     const amountNaira = (amountKobo / 100).toLocaleString('en-NG');
@@ -1289,13 +1394,17 @@ export async function rejectContribution(req, res, next) {
       return res.status(400).json({ error: `Contribution is not pending confirmation (status: ${contribution.status})` });
     }
 
+    // FIX #3: Preserve audit trail - don't erase submission data
     await prisma.contribution.update({
       where: { id },
       data: {
         status: 'PENDING',
         rejectionReason: reason || null,
-        amountSubmittedKobo: null,
-        submittedAt: null,
+        rejectedAmountKobo: contribution.amountSubmittedKobo, // PRESERVE THIS
+        rejectedAt: new Date(),
+        rejectedBy: req.user.id,
+        rejectionCount: { increment: 1 },
+        // Keep amountSubmittedKobo and submittedAt for audit trail
       },
     });
 
@@ -1304,7 +1413,7 @@ export async function rejectContribution(req, res, next) {
     await createNotification(prisma, {
       userId: contribution.userId,
       title: 'Contribution Payment Not Confirmed',
-      message: `Your contribution payment for ${monthName} ${contribution.year} was not confirmed. Reason: ${reason || 'Not specified'}`,
+      message: `Your contribution payment for ${monthName} ${contribution.year} was not confirmed. Reason: ${reason || 'Not specified'}. Please resubmit the correct amount.`,
       type: 'CONTRIBUTION_REJECTED',
     }).catch((err) => logger.error('createNotification failed', err));
 
@@ -1318,6 +1427,7 @@ export async function rejectContribution(req, res, next) {
       reason,
       month: contribution.month,
       year: contribution.year,
+      rejectedAmountKobo: contribution.amountSubmittedKobo,
     });
 
     return res.json({ message: 'Contribution rejected' });

@@ -17,6 +17,7 @@
  */
 
 import { PrismaClient } from '@prisma/client';
+import { v4 as uuid } from 'uuid';
 
 const globalPrisma = new PrismaClient();
 
@@ -40,6 +41,16 @@ export async function getCurrentBalance(ledger) {
 }
 
 /**
+ * Generate a unique reference for ledger entries using UUID
+ * @param {string} type - Ledger type
+ * @param {string} id - Resource ID
+ * @returns {string} Unique reference
+ */
+export function generateLedgerReference(type, id) {
+  return `${type.toLowerCase()}-${id}-${uuid()}`;
+}
+
+/**
  * Append a new ledger entry inside a Prisma transaction.
  * Calculates the new running balance and persists the entry.
  *
@@ -55,26 +66,39 @@ export async function getCurrentBalance(ledger) {
  * @returns {Promise<import('@prisma/client').LedgerEntry>}
  */
 export async function appendLedgerEntry(prismaClient, { type, ledger, userId, loanId, amountKobo, reference }) {
-  // Get the latest balance within the same transaction to avoid races
-  const latest = await prismaClient.ledgerEntry.findFirst({
-    where: { ledger },
-    orderBy: { createdAt: 'desc' },
-    select: { balanceAfterKobo: true },
-  });
+  try {
+    // Get the latest balance within the same transaction to avoid races
+    const latest = await prismaClient.ledgerEntry.findFirst({
+      where: { ledger },
+      orderBy: { createdAt: 'desc' },
+      select: { balanceAfterKobo: true },
+    });
 
-  const currentBalance = latest?.balanceAfterKobo ?? 0;
-  const isDebit = DEBIT_TYPES.has(type);
-  const newBalance = isDebit ? currentBalance - amountKobo : currentBalance + amountKobo;
+    const currentBalance = latest?.balanceAfterKobo ?? 0;
+    const isDebit = DEBIT_TYPES.has(type);
+    const newBalance = isDebit ? currentBalance - amountKobo : currentBalance + amountKobo;
 
-  return prismaClient.ledgerEntry.create({
-    data: {
+    return await prismaClient.ledgerEntry.create({
+      data: {
+        type,
+        ledger,
+        userId: userId ?? null,
+        loanId: loanId ?? null,
+        amountKobo,
+        balanceAfterKobo: newBalance,
+        reference,
+      },
+    });
+  } catch (error) {
+    console.error('Ledger entry creation failed:', {
       type,
       ledger,
-      userId: userId ?? null,
-      loanId: loanId ?? null,
+      userId,
+      loanId,
       amountKobo,
-      balanceAfterKobo: newBalance,
       reference,
-    },
-  });
+      error: error.message,
+    });
+    throw error; // Re-throw to trigger transaction rollback
+  }
 }

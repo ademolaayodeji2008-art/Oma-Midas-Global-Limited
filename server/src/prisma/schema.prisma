@@ -148,6 +148,10 @@ model Contribution {
   paymentNote           String?
   rejectionReason       String?
   submittedAt           DateTime?
+  rejectedAmountKobo    Int?
+  rejectedAt            DateTime?
+  rejectedBy            String?
+  rejectionCount        Int                @default(0)
   createdAt             DateTime           @default(now())
 
   user  User  @relation(fields: [userId], references: [id])
@@ -195,6 +199,9 @@ model LoanInstallment {
   paidAt          DateTime?
   submittedAt     DateTime?
   rejectionReason String?
+  rejectionHistory Json?
+  lastRejectedAt   DateTime?
+  rejectionCount   Int               @default(0)
   createdAt       DateTime          @default(now())
 
   loan Loan @relation(fields: [loanId], references: [id])
