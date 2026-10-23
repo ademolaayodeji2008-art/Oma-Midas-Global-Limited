@@ -57,6 +57,9 @@ const prisma = new PrismaClient();
 // ---------------------------------------------------------------------------
 const app = express();
 
+// Trust proxy (required for Render, Heroku, etc. to get real client IP)
+app.set('trust proxy', 1);
+
 // Sentry request handler must be the first middleware
 if (process.env.SENTRY_DSN) {
   app.use(Sentry.Handlers.requestHandler());
