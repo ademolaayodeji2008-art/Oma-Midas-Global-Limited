@@ -39,6 +39,7 @@ import {
   getPendingContributions,
   approveContribution,
   rejectContribution,
+  sendNewsletter,
 } from '../controllers/admin.controller.js';
 
 const router = Router();
@@ -86,6 +87,9 @@ router.get('/transactions', getAllTransactions);
 
 // Audit logs
 router.get('/audit-logs', getAuditLogs);
+
+// Newsletter
+router.post('/newsletter', sendNewsletter);
 
 // Settings
 router.get('/settings', getSettings);

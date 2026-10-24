@@ -4,6 +4,7 @@
  */
 
 import { PrismaClient } from '@prisma/client';
+import { z } from 'zod';
 import { getBalance as paystackGetBalance } from '../services/paystack.service.js';
 import { appendLedgerEntry, getCurrentBalance } from '../services/ledger.service.js';
 import {
@@ -1530,6 +1531,79 @@ export async function rejectContribution(req, res, next) {
 
     return res.json({ message: 'Contribution rejected' });
   } catch (err) {
+    next(err);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// sendNewsletter — admin: broadcast notification to all active members
+// ---------------------------------------------------------------------------
+
+const newsletterSchema = z.object({
+  title: z.string().min(1, 'Title is required').max(100, 'Title must be 100 characters or less'),
+  message: z.string().min(1, 'Message is required').max(500, 'Message must be 500 characters or less'),
+  sendEmail: z.boolean().optional().default(false),
+});
+
+export async function sendNewsletter(req, res, next) {
+  try {
+    // Validate request body
+    const validated = newsletterSchema.parse(req.body);
+    const { title, message, sendEmail } = validated;
+
+    // Query all active members
+    const activeMembers = await prisma.user.findMany({
+      where: {
+        status: 'ACTIVE',
+        role: 'MEMBER',
+        deletedAt: null,
+      },
+      select: { id: true, fullName: true, email: true },
+    });
+
+    if (activeMembers.length === 0) {
+      return res.status(400).json({ error: 'No active members found' });
+    }
+
+    // Create notification for each member
+    await prisma.$transaction(async (tx) => {
+      const notifications = activeMembers.map((member) => ({
+        userId: member.id,
+        title,
+        message,
+        type: 'NEWSLETTER',
+      }));
+
+      await tx.notification.createMany({
+        data: notifications,
+      });
+    });
+
+    // Optionally send emails
+    if (sendEmail && process.env.EMAIL_HOST) {
+      const { sendNewsletterEmail } = await import('../services/email.service.js');
+      for (const member of activeMembers) {
+        sendNewsletterEmail(member, { title, message }).catch((err) =>
+          logger.error(`sendNewsletterEmail failed for ${member.email}`, err)
+        );
+      }
+    }
+
+    // Log audit trail
+    await logAudit(req.user.id, 'SEND_NEWSLETTER', 'Notification', null, {
+      title,
+      memberCount: activeMembers.length,
+      sendEmail,
+    });
+
+    return res.json({
+      message: `Newsletter sent to ${activeMembers.length} member${activeMembers.length !== 1 ? 's' : ''}`,
+      count: activeMembers.length,
+    });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return res.status(422).json({ error: err.errors[0].message });
+    }
     next(err);
   }
 }

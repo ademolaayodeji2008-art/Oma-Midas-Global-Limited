@@ -26,6 +26,7 @@ import {
   LogOut,
   WalletCards,
   ClipboardCheck,
+  Mail,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import Button from '../ui/Button';
@@ -54,6 +55,7 @@ const adminLinks = [
   { to: '/admin/company-fund',      label: 'Company Fund',     Icon: Building2 },
   { to: '/admin/reports',           label: 'Reports',          Icon: FileText },
   { to: '/admin/audit-log',         label: 'Audit Log',        Icon: BookOpen },
+  { to: '/admin/newsletter',        label: 'Newsletter',       Icon: Mail },
   { to: '/admin/settings',          label: 'Settings',         Icon: Settings },
 ];
 

@@ -503,3 +503,20 @@ export async function sendRepaymentConfirmedEmail(user, { amountKobo, dueDate })
   );
   await send(user.email, 'Repayment confirmed — Oma Midas', html);
 }
+
+/**
+ * Send a newsletter broadcast email.
+ * @param {{fullName:string, email:string}} user
+ * @param {{title:string, message:string}} newsletter
+ */
+export async function sendNewsletterEmail(user, { title, message }) {
+  const html = htmlWrapper(
+    title,
+    heading(title) +
+      paragraph(`Dear <strong>${user.fullName}</strong>,`) +
+      paragraph(message) +
+      paragraph('If you have any questions or concerns, please contact the cooperative administrator.') +
+      button(`${process.env.FRONTEND_URL || '#'}/member/notifications`, 'View All Notifications')
+  );
+  await send(user.email, `${title} — Oma Midas`, html);
+}
