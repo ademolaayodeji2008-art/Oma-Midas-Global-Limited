@@ -2,47 +2,48 @@
  * App.jsx — React Router v6 with all routes, ProtectedRoute, AuthProvider, ToastProvider.
  */
 
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './components/ui/Toast';
+import TopProgressBar from './components/ui/TopProgressBar';
 
-// Public pages
-import Landing from './pages/public/Landing';
-import Login from './pages/public/Login';
-import Signup from './pages/public/Signup';
-import ForgotPassword from './pages/public/ForgotPassword';
-import ResetPassword from './pages/public/ResetPassword';
-import PendingApproval from './pages/public/PendingApproval';
-import Rejected from './pages/public/Rejected';
+// Public pages - lazy loaded
+const Landing = lazy(() => import('./pages/public/Landing'));
+const Login = lazy(() => import('./pages/public/Login'));
+const Signup = lazy(() => import('./pages/public/Signup'));
+const ForgotPassword = lazy(() => import('./pages/public/ForgotPassword'));
+const ResetPassword = lazy(() => import('./pages/public/ResetPassword'));
+const PendingApproval = lazy(() => import('./pages/public/PendingApproval'));
+const Rejected = lazy(() => import('./pages/public/Rejected'));
 
-// Member pages
-import MemberDashboard from './pages/member/Dashboard';
-import Contributions from './pages/member/Contributions';
-import LoanRequest from './pages/member/LoanRequest';
-import LoanRepayment from './pages/member/LoanRepayment';
-import MemberLoanSummary from './pages/member/LoanSummary';
-import Refund from './pages/member/Refund';
-import Transactions from './pages/member/Transactions';
-import Profile from './pages/member/Profile';
-import Notifications from './pages/member/Notifications';
-import ClearanceCard from './pages/member/ClearanceCard';
+// Member pages - lazy loaded
+const MemberDashboard = lazy(() => import('./pages/member/Dashboard'));
+const Contributions = lazy(() => import('./pages/member/Contributions'));
+const LoanRequest = lazy(() => import('./pages/member/LoanRequest'));
+const LoanRepayment = lazy(() => import('./pages/member/LoanRepayment'));
+const MemberLoanSummary = lazy(() => import('./pages/member/LoanSummary'));
+const Refund = lazy(() => import('./pages/member/Refund'));
+const Transactions = lazy(() => import('./pages/member/Transactions'));
+const Profile = lazy(() => import('./pages/member/Profile'));
+const Notifications = lazy(() => import('./pages/member/Notifications'));
+const ClearanceCard = lazy(() => import('./pages/member/ClearanceCard'));
 
-// Admin pages
-import AdminDashboard from './pages/admin/Dashboard';
-import Members from './pages/admin/Members';
-import MemberDetail from './pages/admin/MemberDetail';
-import Loans from './pages/admin/Loans';
-import LoanSummary from './pages/admin/LoanSummary';
-import Refunds from './pages/admin/Refunds';
-import CompanyFund from './pages/admin/CompanyFund';
-import Reports from './pages/admin/Reports';
-import AuditLog from './pages/admin/AuditLog';
-import Settings from './pages/admin/Settings';
-import MemberClearanceCard from './pages/admin/MemberClearanceCard';
-import PendingPayments from './pages/admin/PendingPayments';
-import Newsletter from './pages/admin/Newsletter';
+// Admin pages - lazy loaded
+const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'));
+const Members = lazy(() => import('./pages/admin/Members'));
+const MemberDetail = lazy(() => import('./pages/admin/MemberDetail'));
+const Loans = lazy(() => import('./pages/admin/Loans'));
+const LoanSummary = lazy(() => import('./pages/admin/LoanSummary'));
+const Refunds = lazy(() => import('./pages/admin/Refunds'));
+const CompanyFund = lazy(() => import('./pages/admin/CompanyFund'));
+const Reports = lazy(() => import('./pages/admin/Reports'));
+const AuditLog = lazy(() => import('./pages/admin/AuditLog'));
+const Settings = lazy(() => import('./pages/admin/Settings'));
+const MemberClearanceCard = lazy(() => import('./pages/admin/MemberClearanceCard'));
+const PendingPayments = lazy(() => import('./pages/admin/PendingPayments'));
+const Newsletter = lazy(() => import('./pages/admin/Newsletter'));
 
 /** Loading spinner shown while auth is being resolved. */
 function LoadingScreen() {
@@ -89,8 +90,10 @@ function AnimatedRoutes() {
   const location = useLocation();
 
   return (
-    <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
+    <>
+      <TopProgressBar />
+      <AnimatePresence mode="wait">
+        <Routes location={location} key={location.pathname}>
         {/* Public routes */}
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
@@ -129,8 +132,9 @@ function AnimatedRoutes() {
 
         {/* Catch-all */}
         <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </AnimatePresence>
+        </Routes>
+      </AnimatePresence>
+    </>
   );
 }
 
@@ -139,7 +143,9 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <ToastProvider>
-          <AnimatedRoutes />
+          <Suspense fallback={<LoadingScreen />}>
+            <AnimatedRoutes />
+          </Suspense>
         </ToastProvider>
       </AuthProvider>
     </BrowserRouter>

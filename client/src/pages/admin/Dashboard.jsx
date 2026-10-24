@@ -10,6 +10,7 @@ import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import AnimatedCounter from '../../components/ui/AnimatedCounter';
 import PageTransition from '../../components/layout/PageTransition';
+import { SkeletonCard } from '../../components/ui/LoadingSkeleton';
 import api from '../../lib/api';
 
 const prefersReducedMotion =
@@ -137,8 +138,24 @@ export default function AdminDashboard() {
     <PageTransition>
       <AppLayout title="Admin Dashboard">
         {loading ? (
-          <div className="flex justify-center py-16">
-            <div className="animate-spin w-10 h-10 border-4 border-primary border-t-transparent rounded-full" />
+          <div className="space-y-6">
+            {/* Skeleton stat cards */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <SkeletonCard key={i} />
+              ))}
+            </div>
+            {/* Skeleton charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
+                <div className="h-4 bg-gray-200 rounded animate-pulse w-40 mb-4" />
+                <div className="h-32 bg-gray-100 rounded animate-pulse" />
+              </div>
+              <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
+                <div className="h-4 bg-gray-200 rounded animate-pulse w-40 mb-4" />
+                <div className="h-32 bg-gray-100 rounded animate-pulse" />
+              </div>
+            </div>
           </div>
         ) : (
           <div className="space-y-6">

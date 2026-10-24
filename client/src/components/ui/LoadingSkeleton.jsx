@@ -1,75 +1,75 @@
 /**
- * LoadingSkeleton.jsx — Shimmer loading skeleton component.
+ * LoadingSkeleton.jsx — Shimmer effect skeleton components.
  */
 
 import React from 'react';
 
 /**
+ * Base skeleton component
  * @param {object} props
- * @param {'sm'|'md'|'lg'|'xl'} props.height - Height preset or custom
- * @param {string} props.width - Custom width (e.g., '100%', '50%', '200px')
- * @param {'rectangle'|'circle'|'text'} props.variant
- * @param {string} props.className
+ * @param {string} props.width - Width (e.g., '100%', '200px')
+ * @param {string} props.height - Height (e.g., '20px', '2rem')
+ * @param {string} props.className - Additional CSS classes
+ * @param {boolean} props.rounded - Make it circular (for avatars)
  */
-export default function LoadingSkeleton({
-  height = 'md',
-  width = '100%',
-  variant = 'rectangle',
-  className = '',
-}) {
-  const heightClasses = {
-    sm: 'h-4',
-    md: 'h-6',
-    lg: 'h-12',
-    xl: 'h-24',
-  };
-
-  const variantClasses = {
-    rectangle: 'rounded-lg',
-    circle: 'rounded-full aspect-square',
-    text: 'rounded',
-  };
-
+export function Skeleton({ width, height, className = '', rounded = false }) {
   return (
     <div
-      className={[
-        'bg-gray-200 animate-pulse',
-        heightClasses[height] || height,
-        variantClasses[variant] || variantClasses.rectangle,
-        className,
-      ].join(' ')}
-      style={{ width }}
-      aria-label="Loading"
-      role="status"
+      className={`bg-gray-200 animate-pulse ${rounded ? 'rounded-full' : 'rounded'} ${className}`}
+      style={{ width, height }}
+      aria-hidden="true"
     />
   );
 }
 
 /**
- * Skeleton for a card
+ * Skeleton card - matches the shape of dashboard stat cards
  */
-export function SkeletonCard({ lines = 3, className = '' }) {
+export function SkeletonCard() {
   return (
-    <div className={['card-base space-y-3', className].join(' ')}>
-      <LoadingSkeleton height="sm" width="60%" />
-      {Array.from({ length: lines }).map((_, i) => (
-        <LoadingSkeleton key={i} height="sm" width={i === lines - 1 ? '80%' : '100%'} />
-      ))}
+    <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
+      <div className="flex items-start justify-between mb-3">
+        <Skeleton width="80px" height="12px" />
+        <Skeleton width="20px" height="20px" rounded />
+      </div>
+      <Skeleton width="100px" height="32px" className="mb-2" />
+      <Skeleton width="60px" height="20px" />
     </div>
   );
 }
 
 /**
- * Skeleton for a table row
+ * Skeleton table - renders skeleton rows for table loading state
+ * @param {number} props.rows - Number of skeleton rows (default: 5)
+ * @param {number} props.columns - Number of columns (default: 5)
  */
-export function SkeletonTableRow({ columns = 5 }) {
+export function SkeletonTable({ rows = 5, columns = 5 }) {
   return (
-    <tr className="border-b border-gray-100">
-      {Array.from({ length: columns }).map((_, i) => (
-        <td key={i} className="px-4 py-3">
-          <LoadingSkeleton height="sm" />
-        </td>
-      ))}
-    </tr>
+    <div className="w-full overflow-x-auto rounded-2xl border border-gray-100">
+      <table className="w-full text-sm text-left">
+        <thead>
+          <tr className="bg-sectionBg border-b border-gray-100">
+            {Array.from({ length: columns }).map((_, i) => (
+              <th key={i} scope="col" className="px-4 py-3">
+                <Skeleton width="80px" height="14px" />
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {Array.from({ length: rows }).map((_, i) => (
+            <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+              {Array.from({ length: columns }).map((_, j) => (
+                <td key={j} className="px-4 py-3">
+                  <Skeleton width="90%" height="16px" />
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
+
+export default Skeleton;
