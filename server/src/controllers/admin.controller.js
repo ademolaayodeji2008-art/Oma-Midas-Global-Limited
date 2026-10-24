@@ -1607,3 +1607,309 @@ export async function sendNewsletter(req, res, next) {
     next(err);
   }
 }
+
+// ---------------------------------------------------------------------------
+// downloadClearanceCard — generate HTML clearance card for a member
+// ---------------------------------------------------------------------------
+export async function downloadClearanceCard(req, res, next) {
+  try {
+    const { id } = req.params;
+
+    const member = await prisma.user.findUnique({
+      where: { id, role: 'MEMBER', deletedAt: null },
+      include: {
+        loans: {
+          where: { status: { in: ['DISBURSED', 'REPAYING', 'COMPLETED'] } },
+          include: { installments: { select: { amountKobo: true, status: true } } },
+        },
+        contributions: {
+          where: { status: 'PAID' },
+        },
+      },
+    });
+
+    if (!member) {
+      return res.status(404).json({ error: 'Member not found' });
+    }
+
+    // Calculate financial summary
+    let totalSavingsKobo = 0;
+    for (const contrib of member.contributions) {
+      totalSavingsKobo += contrib.amountKobo;
+    }
+
+    let totalLoanCollectedKobo = 0;
+    let totalLoanRepaidKobo = 0;
+    let outstandingLoanKobo = 0;
+
+    for (const loan of member.loans) {
+      totalLoanCollectedKobo += loan.disbursedAmountKobo;
+      const repaid = loan.installments
+        .filter((i) => i.status === 'PAID')
+        .reduce((sum, i) => sum + i.amountKobo, 0);
+      totalLoanRepaidKobo += repaid;
+
+      if (['DISBURSED', 'REPAYING'].includes(loan.status)) {
+        outstandingLoanKobo += Math.max(0, loan.totalRepayableKobo - repaid);
+      }
+    }
+
+    const clearanceStatus = outstandingLoanKobo === 0 ? 'CLEARED' : 'OUTSTANDING';
+    const statusColor = clearanceStatus === 'CLEARED' ? '#10b981' : '#ef4444';
+    const currentDate = new Date().toLocaleDateString('en-NG', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+
+    // Generate HTML clearance card
+    const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clearance Card - ${member.fullName}</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .card {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 600px;
+      width: 100%;
+      overflow: hidden;
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+    .header h1 {
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+    .header p {
+      font-size: 16px;
+      opacity: 0.9;
+    }
+    .content {
+      padding: 30px;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 12px 24px;
+      border-radius: 50px;
+      font-size: 18px;
+      font-weight: bold;
+      color: white;
+      background: ${statusColor};
+      margin: 20px 0;
+      text-align: center;
+    }
+    .member-info {
+      margin: 20px 0;
+      padding: 20px;
+      background: #f9fafb;
+      border-radius: 8px;
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .info-row:last-child {
+      border-bottom: none;
+    }
+    .info-label {
+      font-weight: 600;
+      color: #374151;
+    }
+    .info-value {
+      color: #6b7280;
+      text-align: right;
+    }
+    .summary-section {
+      margin: 30px 0;
+    }
+    .summary-section h3 {
+      font-size: 18px;
+      color: #374151;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #e5e7eb;
+    }
+    .footer {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 2px solid #e5e7eb;
+      text-align: center;
+      color: #6b7280;
+      font-size: 14px;
+    }
+    .footer strong {
+      color: #374151;
+    }
+    .print-btn {
+      display: inline-block;
+      margin: 20px auto;
+      padding: 12px 30px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+    }
+    .print-btn:hover {
+      opacity: 0.9;
+    }
+    @media print {
+      body {
+        background: white;
+      }
+      .print-btn {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <h1>🏛️ Oma Midas Global Limited</h1>
+      <p>Member Clearance Certificate</p>
+    </div>
+    
+    <div class="content">
+      <div style="text-align: center;">
+        <div class="status-badge">${clearanceStatus}</div>
+      </div>
+
+      <div class="member-info">
+        <div class="info-row">
+          <span class="info-label">Member Name:</span>
+          <span class="info-value">${member.fullName}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Email:</span>
+          <span class="info-value">${member.email}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Phone:</span>
+          <span class="info-value">${member.phone}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Member Status:</span>
+          <span class="info-value">${member.status}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Date Issued:</span>
+          <span class="info-value">${currentDate}</span>
+        </div>
+      </div>
+
+      <div class="summary-section">
+        <h3>Financial Summary</h3>
+        <div class="member-info">
+          <div class="info-row">
+            <span class="info-label">Total Savings:</span>
+            <span class="info-value">₦${(totalSavingsKobo / 100).toLocaleString('en-NG', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Total Loans Collected:</span>
+            <span class="info-value">₦${(totalLoanCollectedKobo / 100).toLocaleString('en-NG', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Total Loans Repaid:</span>
+            <span class="info-value">₦${(totalLoanRepaidKobo / 100).toLocaleString('en-NG', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Outstanding Balance:</span>
+            <span class="info-value" style="color: ${outstandingLoanKobo > 0 ? '#ef4444' : '#10b981'}; font-weight: bold;">
+              ₦${(outstandingLoanKobo / 100).toLocaleString('en-NG', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      ${
+        clearanceStatus === 'CLEARED'
+          ? `
+      <div style="background: #ecfdf5; border: 2px solid #10b981; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center;">
+        <p style="color: #065f46; font-weight: 600; font-size: 16px;">
+          ✅ This member has no outstanding financial obligations with Oma Midas Global Limited as of ${currentDate}.
+        </p>
+      </div>
+      `
+          : `
+      <div style="background: #fef2f2; border: 2px solid #ef4444; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center;">
+        <p style="color: #991b1b; font-weight: 600; font-size: 16px;">
+          ⚠️ This member has outstanding financial obligations totaling ₦${(outstandingLoanKobo / 100).toLocaleString(
+            'en-NG',
+            { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+          )}.
+        </p>
+      </div>
+      `
+      }
+
+      <div class="footer">
+        <p><strong>Oma Midas Global Limited</strong></p>
+        <p>Cooperative Society</p>
+        <p style="margin-top: 10px; font-size: 12px;">
+          This is a computer-generated document. For verification, contact admin@omamidas.com.ng
+        </p>
+      </div>
+
+      <div style="text-align: center;">
+        <button class="print-btn" onclick="window.print()">🖨️ Print Clearance Card</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+    `.trim();
+
+    // Log audit trail
+    await logAudit(req.user.id, 'DOWNLOAD_CLEARANCE_CARD', 'User', member.id, {
+      clearanceStatus,
+      outstandingLoanKobo,
+    });
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Content-Disposition', `inline; filename="clearance-card-${member.fullName.replace(/\s+/g, '-')}.html"`);
+    return res.send(html);
+  } catch (err) {
+    next(err);
+  }
+}
