@@ -167,7 +167,13 @@ export default function Members() {
       label: 'Name',
       render: (v, row) => (
         <span className="flex items-center gap-2">
-          {v}
+          <button
+            type="button"
+            onClick={() => navigate(`/admin/members/${row.id}`)}
+            className="text-primary hover:underline font-medium"
+          >
+            {v}
+          </button>
           {row.clearanceRequestedAt && !row.clearanceAuthorized && (
             <span
               className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700"

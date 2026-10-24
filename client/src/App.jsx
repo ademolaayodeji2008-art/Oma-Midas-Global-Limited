@@ -32,6 +32,7 @@ import ClearanceCard from './pages/member/ClearanceCard';
 // Admin pages
 import AdminDashboard from './pages/admin/Dashboard';
 import Members from './pages/admin/Members';
+import MemberDetail from './pages/admin/MemberDetail';
 import Loans from './pages/admin/Loans';
 import LoanSummary from './pages/admin/LoanSummary';
 import Refunds from './pages/admin/Refunds';
@@ -112,6 +113,7 @@ function AnimatedRoutes() {
 
         {/* Admin routes */}
         <Route path="/admin/dashboard" element={<ProtectedRoute requiredRole="ADMIN"><AdminDashboard /></ProtectedRoute>} />
+        <Route path="/admin/members/:id" element={<ProtectedRoute requiredRole="ADMIN"><MemberDetail /></ProtectedRoute>} />
         <Route path="/admin/members" element={<ProtectedRoute requiredRole="ADMIN"><Members /></ProtectedRoute>} />
         <Route path="/admin/loans" element={<ProtectedRoute requiredRole="ADMIN"><Loans /></ProtectedRoute>} />
         <Route path="/admin/loan-summary" element={<ProtectedRoute requiredRole="ADMIN"><LoanSummary /></ProtectedRoute>} />

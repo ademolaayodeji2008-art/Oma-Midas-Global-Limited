@@ -13,6 +13,8 @@ import {
   rejectMember,
   getAllMembers,
   getMemberDetail,
+  getMemberSummary,
+  getMemberTransactions,
   deactivateMember,
   getLoanRequests,
   approveLoan,
@@ -49,6 +51,8 @@ router.get('/dashboard', getDashboardStats);
 
 // Member management
 router.get('/members/pending', getPendingMembers);
+router.get('/members/:id/summary', getMemberSummary);
+router.get('/members/:id/transactions', getMemberTransactions);
 router.get('/members', getAllMembers);
 router.get('/members/:id', getMemberDetail);
 router.put('/members/:id/approve', approveMember);

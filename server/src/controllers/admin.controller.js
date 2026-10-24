@@ -1125,6 +1125,104 @@ export async function getCycleInfo(req, res, next) {
 }
 
 // ---------------------------------------------------------------------------
+// getMemberSummary — financial summary for a single member
+// ---------------------------------------------------------------------------
+export async function getMemberSummary(req, res, next) {
+  try {
+    const { id } = req.params;
+
+    // Total savings (PAID contributions)
+    const totalSavingsResult = await prisma.contribution.aggregate({
+      where: { userId: id, status: 'PAID' },
+      _sum: { amountKobo: true },
+    });
+    const totalSavingsKobo = totalSavingsResult._sum.amountKobo || 0;
+
+    // Total loans collected (disbursedAmountKobo for DISBURSED/REPAYING/COMPLETED loans)
+    const loansCollected = await prisma.loan.findMany({
+      where: { userId: id, status: { in: ['DISBURSED', 'REPAYING', 'COMPLETED'] } },
+      select: { disbursedAmountKobo: true, totalRepayableKobo: true, status: true },
+    });
+    const totalLoansCollectedKobo = loansCollected.reduce((sum, l) => sum + l.disbursedAmountKobo, 0);
+
+    // Total loans repaid (sum of PAID installments)
+    const totalRepaymentsResult = await prisma.loanInstallment.aggregate({
+      where: {
+        status: 'PAID',
+        loan: { userId: id },
+      },
+      _sum: { amountKobo: true },
+    });
+    const totalLoansRepaidKobo = totalRepaymentsResult._sum.amountKobo || 0;
+
+    // Outstanding balance (totalRepayableKobo - repaid for DISBURSED/REPAYING loans)
+    const activeLoans = await prisma.loan.findMany({
+      where: { userId: id, status: { in: ['DISBURSED', 'REPAYING'] } },
+      select: {
+        id: true,
+        totalRepayableKobo: true,
+        installments: {
+          where: { status: 'PAID' },
+          select: { amountKobo: true },
+        },
+      },
+    });
+
+    let outstandingBalanceKobo = 0;
+    for (const loan of activeLoans) {
+      const repaidOnLoan = loan.installments.reduce((sum, i) => sum + i.amountKobo, 0);
+      outstandingBalanceKobo += Math.max(0, loan.totalRepayableKobo - repaidOnLoan);
+    }
+
+    return res.json({
+      totalSavingsKobo,
+      totalLoansCollectedKobo,
+      totalLoansRepaidKobo,
+      outstandingBalanceKobo,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// getMemberTransactions — paginated ledger entries for a single member
+// ---------------------------------------------------------------------------
+export async function getMemberTransactions(req, res, next) {
+  try {
+    const { id } = req.params;
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
+    const skip = (page - 1) * limit;
+
+    const [entries, total] = await Promise.all([
+      prisma.ledgerEntry.findMany({
+        where: { userId: id },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          type: true,
+          amountKobo: true,
+          balanceAfterKobo: true,
+          reference: true,
+          createdAt: true,
+        },
+      }),
+      prisma.ledgerEntry.count({ where: { userId: id } }),
+    ]);
+
+    return res.json({
+      transactions: entries,
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // getLoanSummary — per-member loan breakdown
 // ---------------------------------------------------------------------------
 export async function getLoanSummary(req, res, next) {
