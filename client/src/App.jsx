@@ -8,6 +8,7 @@ import { AnimatePresence } from 'framer-motion';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './components/ui/Toast';
 import TopProgressBar from './components/ui/TopProgressBar';
+import PageLoader from './components/ui/PageLoader';
 
 // Public pages - lazy loaded
 const Landing = lazy(() => import('./pages/public/Landing'));
@@ -47,11 +48,7 @@ const Newsletter = lazy(() => import('./pages/admin/Newsletter'));
 
 /** Loading spinner shown while auth is being resolved. */
 function LoadingScreen() {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background" aria-label="Loading">
-      <div className="animate-spin w-12 h-12 border-4 border-primary border-t-transparent rounded-full" />
-    </div>
-  );
+  return <PageLoader />;
 }
 
 /**
@@ -143,7 +140,7 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <ToastProvider>
-          <Suspense fallback={<LoadingScreen />}>
+          <Suspense fallback={<PageLoader />}>
             <AnimatedRoutes />
           </Suspense>
         </ToastProvider>
