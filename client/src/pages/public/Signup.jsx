@@ -4,6 +4,7 @@
 
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
 import api from '../../lib/api';
 import { useToast } from '../../components/ui/Toast';
 import Button from '../../components/ui/Button';
@@ -30,6 +31,8 @@ export default function Signup() {
   const [termsOpen, setTermsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const set = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
 
@@ -42,7 +45,9 @@ export default function Signup() {
     if (!form.address || form.address.trim().length < 5) errs.address = 'Enter your full address';
     if (form.password.length < 8) errs.password = 'Password must be at least 8 characters';
     if (form.password !== form.confirmPassword) errs.confirmPassword = 'Passwords do not match';
+    if (!bankData?.bankName) errs.bank = 'Please select your bank';
     if (!bankData?.accountNumber || bankData.accountNumber.length < 10) errs.bank = 'Please enter your 10-digit account number';
+    if (!bankData?.accountName || bankData.accountName.trim().length < 2) errs.bank = 'Please enter your account name';
     if (!termsAgreed) errs.terms = 'You must agree to the Terms & Conditions';
     return errs;
   };
@@ -65,7 +70,7 @@ export default function Signup() {
         bankName: bankData?.bankName || '',
         bankCode: bankData?.bankCode || '',
         accountNumber: bankData?.accountNumber || '',
-        accountName: bankData?.accountName || bankData?.accountNumber || '',
+        accountName: bankData?.accountName || '',
       });
       navigate('/pending');
     } catch (err) {
@@ -174,7 +179,26 @@ export default function Signup() {
                 <label htmlFor="password" className="block text-sm font-medium text-charcoal mb-1">
                   Password <span className="text-error">*</span>
                 </label>
-                <input id="password" type="password" required value={form.password} onChange={set('password')} className={inputClass('password')} autoComplete="new-password" placeholder="Min. 8 characters" />
+                <div className="relative">
+                  <input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={form.password}
+                    onChange={set('password')}
+                    className={inputClass('password')}
+                    autoComplete="new-password"
+                    placeholder="Min. 8 characters"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
                 {errors.password && <p className="text-xs text-error mt-1">{errors.password}</p>}
               </div>
 
@@ -183,7 +207,26 @@ export default function Signup() {
                 <label htmlFor="confirmPassword" className="block text-sm font-medium text-charcoal mb-1">
                   Confirm Password <span className="text-error">*</span>
                 </label>
-                <input id="confirmPassword" type="password" required value={form.confirmPassword} onChange={set('confirmPassword')} className={inputClass('confirmPassword')} autoComplete="new-password" placeholder="Re-enter your password" />
+                <div className="relative">
+                  <input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    required
+                    value={form.confirmPassword}
+                    onChange={set('confirmPassword')}
+                    className={inputClass('confirmPassword')}
+                    autoComplete="new-password"
+                    placeholder="Re-enter your password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
                 {errors.confirmPassword && <p className="text-xs text-error mt-1">{errors.confirmPassword}</p>}
               </div>
 
