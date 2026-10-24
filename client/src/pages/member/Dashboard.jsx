@@ -4,6 +4,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { Wallet, TrendingUp, Calendar } from 'lucide-react';
 import AppLayout from '../../components/layout/AppLayout';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
@@ -120,8 +121,11 @@ export default function MemberDashboard() {
             >
               {/* Savings balance */}
               <motion.div variants={prefersReducedMotion ? {} : itemVariants}>
-                <Card className="text-center">
-                  <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Savings Balance</p>
+                <Card hover className="text-center">
+                  <div className="flex items-center justify-center mb-2">
+                    <Wallet size={24} className="text-success" aria-hidden="true" />
+                  </div>
+                  <p className="text-xs text-gray-400 uppercase tracking-wide mb-2">Savings Balance</p>
                   <p className="font-heading text-2xl font-bold text-primary">
                     <AnimatedCounter value={Math.round((stats?.savingsKobo || 0) / 100)} prefix="₦" />
                   </p>
@@ -131,8 +135,11 @@ export default function MemberDashboard() {
 
               {/* Loan balance */}
               <motion.div variants={prefersReducedMotion ? {} : itemVariants}>
-                <Card className="text-center">
-                  <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Active Loan</p>
+                <Card hover className="text-center">
+                  <div className="flex items-center justify-center mb-2">
+                    <TrendingUp size={24} className="text-error" aria-hidden="true" />
+                  </div>
+                  <p className="text-xs text-gray-400 uppercase tracking-wide mb-2">Active Loan</p>
                   {stats?.activeLoan ? (
                     <>
                       <p className="font-heading text-2xl font-bold text-error">
@@ -148,8 +155,11 @@ export default function MemberDashboard() {
 
               {/* Current cycle */}
               <motion.div variants={prefersReducedMotion ? {} : itemVariants}>
-                <Card className="text-center">
-                  <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Current Cycle</p>
+                <Card hover className="text-center">
+                  <div className="flex items-center justify-center mb-2">
+                    <Calendar size={24} className="text-primary" aria-hidden="true" />
+                  </div>
+                  <p className="text-xs text-gray-400 uppercase tracking-wide mb-2">Current Cycle</p>
                   {cycle ? (
                     <>
                       <p className="text-sm font-semibold text-charcoal">

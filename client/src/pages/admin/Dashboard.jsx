@@ -4,6 +4,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { Users, TrendingUp, Coins, Receipt, DollarSign, AlertCircle, CheckCircle } from 'lucide-react';
 import AppLayout from '../../components/layout/AppLayout';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
@@ -111,14 +112,14 @@ export default function AdminDashboard() {
 
   const statCards = stats
     ? [
-        { label: 'Total Members', value: stats.members?.total || 0, prefix: '' },
-        { label: 'Pending Approvals', value: stats.members?.pending || 0, prefix: '' },
-        { label: 'Active Members', value: stats.members?.active || 0, prefix: '' },
-        { label: 'Pending Payments', value: stats.contributions?.pending || 0, prefix: '' },
-        { label: 'Total Savings (₦)', value: Math.round((stats.totalContributionsKobo || 0) / 100), prefix: '₦' },
-        { label: 'Company Fund (₦)', value: Math.round((stats.companyFundBalanceKobo || 0) / 100), prefix: '₦' },
-        { label: 'Repayments Received (₦)', value: Math.round((stats.totalRepaymentsKobo || 0) / 100), prefix: '₦' },
-        { label: 'Pending Repayments', value: stats.repayments?.pending || 0, prefix: '' },
+        { label: 'Total Members', value: stats.members?.total || 0, prefix: '', icon: Users, color: 'text-primary' },
+        { label: 'Pending Approvals', value: stats.members?.pending || 0, prefix: '', icon: AlertCircle, color: 'text-warning' },
+        { label: 'Active Members', value: stats.members?.active || 0, prefix: '', icon: CheckCircle, color: 'text-success' },
+        { label: 'Pending Payments', value: stats.contributions?.pending || 0, prefix: '', icon: Receipt, color: 'text-warning' },
+        { label: 'Total Savings (₦)', value: Math.round((stats.totalContributionsKobo || 0) / 100), prefix: '₦', icon: TrendingUp, color: 'text-success' },
+        { label: 'Company Fund (₦)', value: Math.round((stats.companyFundBalanceKobo || 0) / 100), prefix: '₦', icon: Coins, color: 'text-accent' },
+        { label: 'Repayments Received (₦)', value: Math.round((stats.totalRepaymentsKobo || 0) / 100), prefix: '₦', icon: DollarSign, color: 'text-success' },
+        { label: 'Pending Repayments', value: stats.repayments?.pending || 0, prefix: '', icon: AlertCircle, color: 'text-warning' },
       ]
     : [];
 
@@ -150,19 +151,22 @@ export default function AdminDashboard() {
             >
               {statCards.map((s, i) => (
                 <motion.div key={i} variants={prefersReducedMotion ? {} : itemVariants}>
-                  <Card>
-                    <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">{s.label}</p>
-                    <p className="font-heading text-xl font-bold text-primary">
+                  <Card hover>
+                    <div className="flex items-start justify-between mb-3">
+                      <p className="text-xs text-gray-400 uppercase tracking-wide">{s.label}</p>
+                      <s.icon size={20} className={s.color} aria-hidden="true" />
+                    </div>
+                    <p className="font-heading text-2xl font-bold text-primary">
                       <AnimatedCounter value={s.value} prefix={s.prefix} />
                     </p>
                     {s.label === 'Pending Approvals' && s.value > 0 && (
-                      <Badge variant="warning" className="mt-1">{s.value} pending</Badge>
+                      <Badge variant="warning" className="mt-2">{s.value} pending</Badge>
                     )}
                     {s.label === 'Pending Payments' && s.value > 0 && (
-                      <Badge variant="warning" className="mt-1">{s.value} awaiting</Badge>
+                      <Badge variant="warning" className="mt-2">{s.value} awaiting</Badge>
                     )}
                     {s.label === 'Pending Repayments' && s.value > 0 && (
-                      <Badge variant="warning" className="mt-1">{s.value} awaiting</Badge>
+                      <Badge variant="warning" className="mt-2">{s.value} awaiting</Badge>
                     )}
                   </Card>
                 </motion.div>

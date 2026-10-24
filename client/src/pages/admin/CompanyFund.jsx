@@ -3,6 +3,7 @@
  */
 
 import React, { useEffect, useState, useCallback } from 'react';
+import { Coins } from 'lucide-react';
 import AppLayout from '../../components/layout/AppLayout';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -76,9 +77,12 @@ export default function CompanyFund() {
           ) : (
             <>
               {/* Balance card */}
-              <Card>
-                <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Company Fund Balance</p>
-                <p className="font-heading text-3xl font-bold text-primary">
+              <Card hover>
+                <div className="flex items-start justify-between mb-3">
+                  <p className="text-xs text-gray-400 uppercase tracking-wide">Company Fund Balance</p>
+                  <Coins size={24} className="text-accent" aria-hidden="true" />
+                </div>
+                <p className="font-heading text-4xl font-bold text-primary">
                   <AnimatedCounter value={Math.round((fund?.ledgerBalanceKobo || 0) / 100)} prefix="₦" />
                 </p>
               </Card>

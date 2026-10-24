@@ -3,6 +3,8 @@
  */
 
 import React from 'react';
+import EmptyState from './EmptyState';
+import { FileQuestion } from 'lucide-react';
 
 /**
  * @param {object} props
@@ -44,9 +46,13 @@ export default function Table({ columns = [], data = [], loading = false, emptyM
             <tr>
               <td
                 colSpan={columns.length}
-                className="px-4 py-10 text-center text-gray-400"
+                className="px-4 py-2"
               >
-                {emptyMessage}
+                <EmptyState
+                  icon={FileQuestion}
+                  title="No data found"
+                  message={emptyMessage}
+                />
               </td>
             </tr>
           ) : (

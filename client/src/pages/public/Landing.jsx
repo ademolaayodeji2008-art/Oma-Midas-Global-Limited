@@ -113,46 +113,67 @@ export default function Landing() {
       <Navbar />
 
       {/* ── Hero ─────────────────────────────────────────── */}
-      <section className="bg-gradient-to-br from-primary to-[#2d1133] text-white py-24 px-6">
+      <section className="relative bg-gradient-to-br from-primary via-[#2d1133] to-[#1a0d2e] text-white py-32 px-6 overflow-hidden">
+        {/* Animated background pattern */}
+        <div className="absolute inset-0 opacity-10" aria-hidden="true">
+          <motion.div
+            className="absolute top-0 left-1/4 w-96 h-96 bg-accent rounded-full blur-3xl"
+            animate={{ y: [0, 30, 0], x: [0, 20, 0] }}
+            transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+          />
+          <motion.div
+            className="absolute bottom-0 right-1/4 w-80 h-80 bg-white rounded-full blur-3xl"
+            animate={{ y: [0, -40, 0], x: [0, -30, 0] }}
+            transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
+          />
+        </div>
+
         <motion.div
-          className="max-w-3xl mx-auto text-center"
+          className="max-w-3xl mx-auto text-center relative z-10"
           variants={staggerContainer}
           initial={prefersReducedMotion ? 'visible' : 'hidden'}
           animate="visible"
         >
           <motion.h1
             variants={staggerItem}
-            className="font-heading text-4xl md:text-5xl font-bold leading-tight"
+            className="font-heading text-4xl md:text-6xl font-bold leading-tight"
           >
             Your Trusted Savings &amp; Loan Cooperative
           </motion.h1>
           <motion.p
             variants={staggerItem}
-            className="mt-4 text-lg text-white/80 max-w-xl mx-auto"
+            className="mt-6 text-lg md:text-xl text-white/90 max-w-2xl mx-auto leading-relaxed"
           >
             Save monthly, build eligibility, and access fair loans — all within a transparent,
             member-first cooperative.
           </motion.p>
-          <motion.div variants={staggerItem} className="mt-8 flex flex-wrap gap-4 justify-center">
+          <motion.div variants={staggerItem} className="mt-10 flex flex-wrap gap-4 justify-center">
             <Link to="/signup">
               <motion.button
-                className="btn-primary bg-accent text-white px-8 py-3 rounded-xl font-semibold hover:shadow-hover"
-                whileHover={prefersReducedMotion ? {} : { y: -2 }}
+                className="btn-primary bg-accent text-white px-10 py-4 rounded-xl font-semibold text-lg hover:shadow-hover"
+                whileHover={prefersReducedMotion ? {} : { y: -2, scale: 1.02 }}
                 whileTap={prefersReducedMotion ? {} : { scale: 0.97 }}
               >
                 Join Now
               </motion.button>
             </Link>
             <motion.button
-              className="btn-secondary border border-white/40 text-white px-8 py-3 rounded-xl font-semibold hover:bg-white/10"
+              className="btn-secondary border-2 border-white/50 text-white px-10 py-4 rounded-xl font-semibold text-lg hover:bg-white/10 backdrop-blur-sm"
               onClick={scrollToHowItWorks}
-              whileHover={prefersReducedMotion ? {} : { y: -2 }}
+              whileHover={prefersReducedMotion ? {} : { y: -2, scale: 1.02 }}
               whileTap={prefersReducedMotion ? {} : { scale: 0.97 }}
             >
               Learn More
             </motion.button>
           </motion.div>
         </motion.div>
+
+        {/* Wave divider at bottom */}
+        <div className="absolute bottom-0 left-0 w-full" aria-hidden="true">
+          <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="w-full h-16 md:h-24">
+            <path d="M0,0 C150,60 350,0 600,50 C850,100 1050,40 1200,60 L1200,120 L0,120 Z" fill="#F5F3FF" />
+          </svg>
+        </div>
       </section>
 
       {/* ── How It Works ─────────────────────────────────── */}
