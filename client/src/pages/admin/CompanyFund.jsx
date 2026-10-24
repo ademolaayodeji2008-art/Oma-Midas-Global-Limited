@@ -1,5 +1,5 @@
 /**
- * CompanyFund.jsx — Company fund balance, Paystack balance, topup, and ledger.
+ * CompanyFund.jsx — Company fund balance, topup, and ledger.
  */
 
 import React, { useEffect, useState, useCallback } from 'react';
@@ -75,21 +75,13 @@ export default function CompanyFund() {
             </div>
           ) : (
             <>
-              {/* Balance cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card>
-                  <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Company Fund Balance</p>
-                  <p className="font-heading text-3xl font-bold text-primary">
-                    <AnimatedCounter value={Math.round((fund?.ledgerBalanceKobo || 0) / 100)} prefix="₦" />
-                  </p>
-                </Card>
-                <Card>
-                  <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Paystack Balance</p>
-                  <p className="font-heading text-3xl font-bold text-accent">
-                    <AnimatedCounter value={Math.round((fund?.paystackBalanceKobo || 0) / 100)} prefix="₦" />
-                  </p>
-                </Card>
-              </div>
+              {/* Balance card */}
+              <Card>
+                <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Company Fund Balance</p>
+                <p className="font-heading text-3xl font-bold text-primary">
+                  <AnimatedCounter value={Math.round((fund?.ledgerBalanceKobo || 0) / 100)} prefix="₦" />
+                </p>
+              </Card>
 
               <div className="flex justify-end">
                 <Button variant="primary" size="md" onClick={() => setTopupOpen(true)}>
