@@ -40,7 +40,6 @@ import {
   approveContribution,
   rejectContribution,
   sendNewsletter,
-  downloadClearanceCard,
 } from '../controllers/admin.controller.js';
 
 const router = Router();
@@ -55,7 +54,6 @@ router.get('/dashboard', getDashboardStats);
 router.get('/members/pending', getPendingMembers);
 router.get('/members/:id/summary', getMemberSummary);
 router.get('/members/:id/transactions', getMemberTransactions);
-router.get('/members/:id/clearance-card', downloadClearanceCard);
 router.get('/members', getAllMembers);
 router.get('/members/:id', getMemberDetail);
 router.put('/members/:id/approve', approveMember);
