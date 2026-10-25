@@ -28,6 +28,7 @@ import refundRoutes from './src/routes/refunds.routes.js';
 import notificationRoutes from './src/routes/notifications.routes.js';
 import paystackRoutes from './src/routes/paystack.routes.js';
 import adminRoutes from './src/routes/admin.routes.js';
+import memberRoutes from './src/routes/member.routes.js';
 import clearanceRoutes from './src/routes/clearance.routes.js';
 
 import { errorHandler } from './src/middleware/errorHandler.middleware.js';
@@ -117,6 +118,7 @@ app.use('/api/refunds', refundRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/paystack', paystackRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/member', memberRoutes);
 app.use('/api/clearance-card', clearanceRoutes);
 
 // Public cycle endpoint

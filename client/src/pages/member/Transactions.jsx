@@ -24,11 +24,11 @@ export default function Transactions() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({ type: '', status: '', dateFrom: '', dateTo: '' });
+  const [filters, setFilters] = useState({ type: '', dateFrom: '', dateTo: '' });
 
   const fetchData = useCallback(() => {
     setLoading(true);
-    api.get('/api/admin/transactions', {
+    api.get('/api/member/transactions', {
       params: { page, limit: 20, ...filters },
     })
       .then((res) => {
@@ -43,14 +43,14 @@ export default function Transactions() {
 
   const handleExport = async () => {
     try {
-      const res = await api.get('/api/admin/transactions', {
+      const res = await api.get('/api/member/transactions', {
         params: { ...filters, format: 'csv', limit: 10000 },
         responseType: 'blob',
       });
       const url = URL.createObjectURL(new Blob([res.data]));
       const a = document.createElement('a');
       a.href = url;
-      a.download = `transactions-${Date.now()}.csv`;
+      a.download = `my-transactions-${Date.now()}.csv`;
       a.click();
       URL.revokeObjectURL(url);
     } catch {
@@ -64,10 +64,11 @@ export default function Transactions() {
   };
 
   const columns = [
-    { key: 'createdAt', label: 'Date', render: (v) => v ? new Date(v).toLocaleDateString() : '—' },
+    { key: 'createdAt', label: 'Date', render: (v) => v ? new Date(v).toLocaleDateString('en-NG', { year: 'numeric', month: 'short', day: 'numeric' }) : '—' },
     { key: 'type', label: 'Type', render: (v) => <Badge variant={typeVariant[v] || 'neutral'}>{v?.replace(/_/g, ' ')}</Badge> },
-    { key: 'amountKobo', label: 'Amount', render: (v) => `₦${((v || 0) / 100).toLocaleString()}` },
-    { key: 'status', label: 'Status', render: (v) => <Badge variant={v === 'SUCCESS' ? 'success' : v === 'FAILED' ? 'error' : 'neutral'}>{v}</Badge> },
+    { key: 'ledger', label: 'Account', render: (v) => <span className="text-sm font-medium">{v}</span> },
+    { key: 'amountKobo', label: 'Amount', render: (v) => `₦${((v || 0) / 100).toLocaleString('en-NG', { minimumFractionDigits: 2 })}` },
+    { key: 'balanceAfterKobo', label: 'Balance After', render: (v) => `₦${((v || 0) / 100).toLocaleString('en-NG', { minimumFractionDigits: 2 })}` },
     { key: 'reference', label: 'Reference', render: (v) => <span className="font-mono text-xs">{v || '—'}</span> },
   ];
 
