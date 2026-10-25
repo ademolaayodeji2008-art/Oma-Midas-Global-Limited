@@ -157,7 +157,8 @@ model Contribution {
   user  User  @relation(fields: [userId], references: [id])
   cycle Cycle @relation(fields: [cycleId], references: [id])
 
-  @@unique([userId, cycleId, month, year])
+  @@index([userId, cycleId, month, year])
+  @@index([submittedAt])
   @@index([userId])
   @@index([cycleId])
   @@index([paystackRef])

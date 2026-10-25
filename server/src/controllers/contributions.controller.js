@@ -67,22 +67,31 @@ export async function getContributionStatus(req, res, next) {
 
     const { month, year } = getContributionPeriod();
 
-    const contribution = await prisma.contribution.findUnique({
+    // Get all contributions for this month (can be multiple)
+    const contributions = await prisma.contribution.findMany({
       where: {
-        userId_cycleId_month_year: {
-          userId: req.user.id,
-          cycleId: cycle.id,
-          month,
-          year,
-        },
+        userId: req.user.id,
+        cycleId: cycle.id,
+        month,
+        year,
       },
+      orderBy: { submittedAt: 'desc' },
     });
+
+    // Calculate total paid this month
+    const totalPaidKobo = contributions
+      .filter((c) => c.status === 'PAID')
+      .reduce((sum, c) => sum + c.amountKobo, 0);
+
+    const hasPending = contributions.some((c) => c.status === 'PENDING_CONFIRMATION');
 
     return res.json({
       month,
       year,
-      status: contribution?.status ?? 'NOT_PAID',
-      contribution: contribution ?? null,
+      status: totalPaidKobo > 0 ? 'PAID' : hasPending ? 'PENDING_CONFIRMATION' : 'NOT_PAID',
+      contributions,
+      totalPaidKobo,
+      contributionCount: contributions.length,
     });
   } catch (err) {
     next(err);
@@ -134,53 +143,22 @@ export async function submitPayment(req, res, next) {
       });
     }
 
-    const existing = await prisma.contribution.findUnique({
-      where: {
-        userId_cycleId_month_year: {
-          userId: req.user.id,
-          cycleId: cycle.id,
-          month,
-          year,
-        },
-      },
-    });
-
-    if (existing?.status === 'PAID') {
-      return res.status(400).json({ error: 'Contribution for this month has already been paid' });
-    }
-
-    if (existing?.status === 'PENDING_CONFIRMATION') {
-      return res.status(400).json({ error: 'Payment already submitted, awaiting confirmation' });
-    }
-
     const now = new Date();
 
-    if (existing) {
-      await prisma.contribution.update({
-        where: { id: existing.id },
-        data: {
-          status: 'PENDING_CONFIRMATION',
-          amountSubmittedKobo: amountKobo,
-          paymentNote: paymentNote || null,
-          rejectionReason: null,
-          submittedAt: now,
-        },
-      });
-    } else {
-      await prisma.contribution.create({
-        data: {
-          userId: req.user.id,
-          cycleId: cycle.id,
-          month,
-          year,
-          amountKobo: minAmount,
-          status: 'PENDING_CONFIRMATION',
-          amountSubmittedKobo: amountKobo,
-          paymentNote: paymentNote || null,
-          submittedAt: now,
-        },
-      });
-    }
+    // Create new contribution (allow multiple per month)
+    await prisma.contribution.create({
+      data: {
+        userId: req.user.id,
+        cycleId: cycle.id,
+        month,
+        year,
+        amountKobo: minAmount,
+        status: 'PENDING_CONFIRMATION',
+        amountSubmittedKobo: amountKobo,
+        paymentNote: paymentNote || null,
+        submittedAt: now,
+      },
+    });
 
     // Notify all admins
     const monthName = new Date(year, month - 1).toLocaleString('en-NG', { month: 'long' });
