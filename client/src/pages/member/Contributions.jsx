@@ -48,6 +48,20 @@ function ContributionList({ contributions, loading, onMakePayment, currentMonth,
     );
   }
 
+  // Group contributions by month for display
+  const thisMonthContributions = contributions.filter(
+    (c) => c.month === currentMonth && c.year === currentYear
+  );
+  const otherContributions = contributions.filter(
+    (c) => !(c.month === currentMonth && c.year === currentYear)
+  );
+
+  const thisMonthPaid = thisMonthContributions.filter((c) => c.status === 'PAID').length;
+  const thisMonthPending = thisMonthContributions.filter((c) => c.status === 'PENDING_CONFIRMATION').length;
+  const thisMonthTotal = thisMonthContributions
+    .filter((c) => c.status === 'PAID')
+    .reduce((sum, c) => sum + c.amountKobo, 0);
+
   return (
     <div className="space-y-6">
       {/* Streak card */}
@@ -63,49 +77,92 @@ function ContributionList({ contributions, loading, onMakePayment, currentMonth,
         </div>
       </Card>
 
-      {/* Month cards grid */}
+      {/* Current Month Summary & Make Payment Button */}
       <Card>
-        <h2 className="font-heading font-bold text-primary mb-4">This Cycle&apos;s Contributions</h2>
-        {contributions.length === 0 ? (
-          <p className="text-sm text-gray-400 py-4 text-center">No contributions found for this cycle.</p>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            {contributions.map((c) => {
-              const isCurrentMonth = c.month === currentMonth && c.year === currentYear;
-              const canPay = (c.status === 'PENDING') && isCurrentMonth;
-              const rejected = c.status === 'PENDING' && c.rejectionReason;
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="font-heading font-bold text-primary">
+              {MONTHS[currentMonth - 1]} {currentYear}
+            </h2>
+            <p className="text-sm text-gray-500 mt-1">
+              {thisMonthPaid} paid • {thisMonthPending} pending
+              {thisMonthTotal > 0 && ` • Total: ₦${(thisMonthTotal / 100).toLocaleString()}`}
+            </p>
+          </div>
+          <Button 
+            variant="primary" 
+            onClick={() => onMakePayment({ month: currentMonth, year: currentYear })}
+          >
+            + Make Contribution
+          </Button>
+        </div>
 
-              return (
-                <div
-                  key={c.id}
-                  className={[
-                    'rounded-xl border p-3 flex flex-col gap-2',
-                    c.status === 'PAID' ? 'border-emerald-200 bg-emerald-50' :
-                    c.status === 'PENDING_CONFIRMATION' ? 'border-amber-200 bg-amber-50' :
-                    'border-gray-200 bg-white',
-                  ].join(' ')}
-                >
-                  <p className="text-xs font-semibold text-gray-600">
-                    {MONTHS[c.month - 1]} {c.year}
-                  </p>
+        {thisMonthContributions.length > 0 && (
+          <div className="space-y-2 mt-4 pt-4 border-t border-gray-100">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
+              This Month&apos;s Contributions
+            </p>
+            {thisMonthContributions.map((c) => (
+              <div
+                key={c.id}
+                className={[
+                  'rounded-lg border p-3 flex items-center justify-between',
+                  c.status === 'PAID' ? 'border-emerald-200 bg-emerald-50' :
+                  c.status === 'PENDING_CONFIRMATION' ? 'border-amber-200 bg-amber-50' :
+                  'border-gray-200 bg-white',
+                ].join(' ')}
+              >
+                <div>
                   <Badge variant={statusVariant(c.status)}>{statusLabel(c.status)}</Badge>
-                  {c.status === 'PAID' && c.amountKobo ? (
-                    <p className="text-xs text-gray-500">₦{(c.amountKobo / 100).toLocaleString()}</p>
-                  ) : null}
-                  {rejected && (
-                    <p className="text-xs text-red-600 leading-tight">Rejected: {c.rejectionReason}</p>
+                  {c.status === 'PAID' && c.amountKobo && (
+                    <p className="text-sm font-semibold text-gray-700 mt-1">
+                      ₦{(c.amountKobo / 100).toLocaleString()}
+                    </p>
                   )}
-                  {canPay && (
-                    <Button variant="primary" size="sm" onClick={() => onMakePayment(c)}>
-                      Make Payment
-                    </Button>
+                  {c.submittedAt && (
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {new Date(c.submittedAt).toLocaleDateString('en-NG', { month: 'short', day: 'numeric' })}
+                    </p>
                   )}
                 </div>
-              );
-            })}
+                {c.rejectionReason && (
+                  <p className="text-xs text-red-600 leading-tight max-w-xs">
+                    Rejected: {c.rejectionReason}
+                  </p>
+                )}
+              </div>
+            ))}
           </div>
         )}
       </Card>
+
+      {/* Previous Months */}
+      {otherContributions.length > 0 && (
+        <Card>
+          <h2 className="font-heading font-bold text-primary mb-4">Previous Months</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            {otherContributions.map((c) => (
+              <div
+                key={c.id}
+                className={[
+                  'rounded-xl border p-3 flex flex-col gap-2',
+                  c.status === 'PAID' ? 'border-emerald-200 bg-emerald-50' :
+                  c.status === 'PENDING_CONFIRMATION' ? 'border-amber-200 bg-amber-50' :
+                  'border-gray-200 bg-white',
+                ].join(' ')}
+              >
+                <p className="text-xs font-semibold text-gray-600">
+                  {MONTHS[c.month - 1]} {c.year}
+                </p>
+                <Badge variant={statusVariant(c.status)}>{statusLabel(c.status)}</Badge>
+                {c.status === 'PAID' && c.amountKobo && (
+                  <p className="text-xs text-gray-500">₦{(c.amountKobo / 100).toLocaleString()}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
     </div>
   );
 }
@@ -361,32 +418,13 @@ export default function Contributions() {
     fetchData();
   };
 
-  // Always show the current month as payable if no record exists for it yet
-  const hasCurrentMonth = contributions.some(
-    (c) => c.month === currentMonth && c.year === currentYear
-  );
-  const displayContributions = hasCurrentMonth
-    ? contributions
-    : [
-        {
-          id: `virtual-${currentMonth}-${currentYear}`,
-          month: currentMonth,
-          year: currentYear,
-          status: 'PENDING',
-          amountKobo: 0,
-          rejectionReason: null,
-          _virtual: true,
-        },
-        ...contributions,
-      ];
-
   return (
     <PageTransition>
       <AppLayout title="Contributions">
         <div className="space-y-6">
           {view === 'list' && (
             <ContributionList
-              contributions={displayContributions}
+              contributions={contributions}
               loading={loading}
               onMakePayment={handleMakePayment}
               currentMonth={currentMonth}
