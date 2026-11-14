@@ -13,6 +13,12 @@ const prisma = new PrismaClient();
 export async function getMyTransactions(req, res, next) {
   try {
     const userId = req.user.id;
+    
+    // Safety check
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
     const skip = (page - 1) * limit;
@@ -21,7 +27,7 @@ export async function getMyTransactions(req, res, next) {
     const { type, startDate, endDate, format } = req.query;
     
     const where = {
-      userId,
+      userId,  // MUST filter by authenticated user
       ...(type && { type }),
       ...(startDate || endDate
         ? {
@@ -84,6 +90,9 @@ export async function getMyTransactions(req, res, next) {
       }),
       prisma.ledgerEntry.count({ where }),
     ]);
+
+    // Log for debugging
+    console.log(`[getMyTransactions] User ${userId} (${req.user.email}) fetched ${entries.length} transactions`);
 
     return res.json({
       transactions: entries,

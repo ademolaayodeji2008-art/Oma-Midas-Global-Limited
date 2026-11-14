@@ -26,13 +26,21 @@ async function findActiveCycle() {
 // ---------------------------------------------------------------------------
 export async function getMyContributions(req, res, next) {
   try {
+    // Extra safety: ensure user is authenticated and is a member
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
     const cycle = await findActiveCycle();
     if (!cycle) {
       return res.status(404).json({ error: 'No active cycle found' });
     }
 
     const contributions = await prisma.contribution.findMany({
-      where: { userId: req.user.id, cycleId: cycle.id },
+      where: { 
+        userId: req.user.id,  // MUST be the authenticated user's ID
+        cycleId: cycle.id 
+      },
       orderBy: [{ year: 'desc' }, { month: 'desc' }],
       select: {
         id: true,
@@ -48,6 +56,9 @@ export async function getMyContributions(req, res, next) {
         createdAt: true,
       },
     });
+
+    // Log for debugging (remove after fix confirmed)
+    console.log(`[getMyContributions] User ${req.user.id} (${req.user.email}) fetched ${contributions.length} contributions`);
 
     return res.json({ contributions, cycle });
   } catch (err) {
