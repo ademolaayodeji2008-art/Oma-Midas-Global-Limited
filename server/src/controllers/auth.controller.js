@@ -13,9 +13,10 @@ const prisma = new PrismaClient();
 
 const COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: true, // Always true for production (HTTPS required for SameSite=None)
-  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' allows cross-domain cookies
+  secure: process.env.NODE_ENV === 'production', // HTTPS required in production
+  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' for cross-domain in production
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  path: '/', // Ensure cookie is available for all paths
 };
 
 // ---------------------------------------------------------------------------
@@ -117,7 +118,8 @@ export function logout(req, res) {
   res.clearCookie('token', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    path: '/',
   });
   return res.json({ message: 'Logged out' });
 }
