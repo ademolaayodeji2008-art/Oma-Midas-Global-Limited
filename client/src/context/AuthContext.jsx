@@ -31,12 +31,23 @@ export function AuthProvider({ children }) {
     setUser(null);
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    try {
+      const res = await api.get('/api/auth/me');
+      setUser(res.data.user);
+      return res.data.user;
+    } catch (err) {
+      setUser(null);
+      return null;
+    }
+  }, []);
+
   const isAdmin = user?.role === 'ADMIN';
   const isMember = user?.role === 'MEMBER';
   const isAuthenticated = Boolean(user);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, isAdmin, isMember, isAuthenticated }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, refreshUser, isAdmin, isMember, isAuthenticated }}>
       {children}
     </AuthContext.Provider>
   );
