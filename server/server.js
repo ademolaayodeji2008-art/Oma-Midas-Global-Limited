@@ -74,16 +74,26 @@ const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:5173')
   .split(',')
   .map(url => url.trim());
 
+console.log('🔒 CORS Allowed Origins:', allowedOrigins);
+
 app.use(
   cors({
     origin: (origin, callback) => {
+      console.log('🌍 Request from origin:', origin);
+      
       // Allow requests with no origin (mobile apps, Postman, etc.)
-      if (!origin) return callback(null, true);
+      if (!origin) {
+        console.log('✅ No origin - allowing');
+        return callback(null, true);
+      }
       
       if (allowedOrigins.includes(origin)) {
+        console.log('✅ Origin allowed:', origin);
         callback(null, true);
       } else {
-        callback(new Error('Not allowed by CORS'));
+        console.log('❌ Origin BLOCKED:', origin);
+        console.log('   Allowed origins:', allowedOrigins);
+        callback(new Error(`Not allowed by CORS: ${origin}`));
       }
     },
     credentials: true,
