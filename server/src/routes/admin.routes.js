@@ -10,6 +10,7 @@ import {
   getDashboardStats,
   getPendingMembers,
   approveMember,
+  createMember,
   rejectMember,
   getAllMembers,
   getMemberDetail,
@@ -52,6 +53,7 @@ router.get('/dashboard', getDashboardStats);
 
 // Member management
 router.get('/members/pending', getPendingMembers);
+router.post('/members', createMember);
 router.get('/members/:id/summary', getMemberSummary);
 router.get('/members/:id/transactions', getMemberTransactions);
 router.get('/members', getAllMembers);

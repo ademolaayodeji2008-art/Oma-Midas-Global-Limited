@@ -54,23 +54,52 @@ export default function MemberDashboard() {
   const { cycle } = useCycle();
 
   useEffect(() => {
-    Promise.all([
-      api.get('/api/contributions'),
-      api.get('/api/loans'),
-    ])
-      .then(([contribRes, loansRes]) => {
-        const contribs = contribRes.data.contributions || contribRes.data || [];
-        const loans = loansRes.data.loans || loansRes.data || [];
-        setContributions(contribs);
+    // Fetch member's own financial summary from backend
+    api.get('/api/member/financial-summary')
+      .then((res) => {
+        const savingsKobo = res.data.totalSavingsKobo || 0;
+        setStats((prev) => ({ ...prev, savingsKobo }));
+      })
+      .catch(() => {
+        // Fallback: calculate from contributions
+        Promise.all([
+          api.get('/api/contributions'),
+          api.get('/api/loans'),
+        ])
+          .then(([contribRes, loansRes]) => {
+            const contribs = contribRes.data.contributions || contribRes.data || [];
+            const loans = loansRes.data.loans || loansRes.data || [];
+            setContributions(contribs);
 
-        const savingsKobo = contribs
-          .filter((c) => c.status === 'PAID')
-          .reduce((sum, c) => sum + (c.amountKobo || 0), 0);
+            const savingsKobo = contribs
+              .filter((c) => c.status === 'PAID')
+              .reduce((sum, c) => sum + (c.amountKobo || 0), 0);
 
+            const activeLoan = loans.find((l) =>
+              l.status === 'APPROVED' || l.status === 'DISBURSED' || l.status === 'REPAYING'
+            );
+            setStats({ savingsKobo, activeLoan, contribs });
+          })
+          .catch(() => {})
+          .finally(() => setLoading(false));
+      });
+
+    // Still fetch loans separately
+    api.get('/api/loans')
+      .then((res) => {
+        const loans = res.data.loans || res.data || [];
         const activeLoan = loans.find((l) =>
           l.status === 'APPROVED' || l.status === 'DISBURSED' || l.status === 'REPAYING'
         );
-        setStats({ savingsKobo, activeLoan, contribs });
+        setStats((prev) => ({ ...prev, activeLoan }));
+      })
+      .catch(() => {});
+
+    // Fetch contributions for grid
+    api.get('/api/contributions')
+      .then((res) => {
+        const contribs = res.data.contributions || res.data || [];
+        setContributions(contribs);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
