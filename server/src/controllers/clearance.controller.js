@@ -71,10 +71,19 @@ async function buildClearanceCard(userId) {
   const cycle = await prisma.cycle.findFirst({ where: { isActive: true } });
   if (!cycle) return { noCycle: true };
 
-  // (d) PAID contributions for this user in this cycle, ordered by month asc
+  // (d) PAID and PENDING_CONFIRMATION contributions for this user in this cycle, ordered by month asc
   const contributions = await prisma.contribution.findMany({
-    where: { userId, cycleId: cycle.id, status: 'PAID' },
+    where: { 
+      userId, 
+      cycleId: cycle.id, 
+      status: { in: ['PAID', 'PENDING_CONFIRMATION'] }
+    },
     orderBy: { month: 'asc' },
+  });
+
+  console.log(`🔍 [buildClearanceCard] userId: ${userId}, found ${contributions.length} contributions`);
+  contributions.forEach(c => {
+    console.log(`  - Month ${c.month}: ₦${c.amountKobo/100} (${c.status})`);
   });
 
   // (e) Loan installments (PAID) for this user's loans in this cycle
@@ -101,14 +110,19 @@ async function buildClearanceCard(userId) {
   let runningBalance = 0;
   const savingsBoard = Array.from({ length: 12 }, (_, i) => {
     const monthIndex = i + 1;
-    const contrib = contributions.find((c) => c.month === monthIndex);
-    const amountKobo = contrib ? contrib.amountKobo : 0;
+    // Get all contributions for this month (could be multiple)
+    const monthContribs = contributions.filter((c) => c.month === monthIndex);
+    const amountKobo = monthContribs.reduce((sum, c) => sum + c.amountKobo, 0);
+    const isPending = monthContribs.some(c => c.status === 'PENDING_CONFIRMATION');
+    const latestContrib = monthContribs.length > 0 ? monthContribs[monthContribs.length - 1] : null;
+    
     runningBalance += amountKobo;
     return {
       month: monthIndex,
-      date: contrib?.paidAt ? contrib.paidAt.toISOString() : null,
+      date: latestContrib?.paidAt ? latestContrib.paidAt.toISOString() : null,
       amountKobo,
       balanceKobo: runningBalance,
+      isPending, // Flag to show pending status on frontend
     };
   });
 
